@@ -86,11 +86,11 @@ export default function LoginPage() {
           </form>
 
           {/* Seed hint */}
-          <div className="mt-6 rounded-lg bg-gray-50 border border-gray-100 p-3 text-xs text-gray-500 space-y-1">
+          {/* <div className="mt-6 rounded-lg bg-gray-50 border border-gray-100 p-3 text-xs text-gray-500 space-y-1">
             <p className="font-medium text-gray-600">Demo credentials</p>
             <p>Admin: admin@codeneptune.com / admin123</p>
             <p>Dev: priya@codeneptune.com / password123</p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
