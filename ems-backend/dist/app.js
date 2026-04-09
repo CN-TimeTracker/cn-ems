@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const path_1 = __importDefault(require("path"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const morgan_1 = __importDefault(require("morgan"));
@@ -21,11 +22,16 @@ const leave_routes_1 = __importDefault(require("./routes/leave.routes"));
 const dashboard_routes_1 = __importDefault(require("./routes/dashboard.routes"));
 const attendance_routes_1 = __importDefault(require("./routes/attendance.routes"));
 const profile_routes_1 = __importDefault(require("./routes/profile.routes"));
+const payslip_routes_1 = __importDefault(require("./routes/payslip.routes"));
+const event_routes_1 = __importDefault(require("./routes/event.routes"));
+const holiday_routes_1 = __importDefault(require("./routes/holiday.routes"));
+const cron_service_1 = require("./services/cron.service");
 // ─────────────────────────────────────────────
 // BOOTSTRAP
 // ─────────────────────────────────────────────
 dotenv_1.default.config();
 (0, db_1.default)();
+cron_service_1.CronService.init();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
 // ─────────────────────────────────────────────
@@ -62,6 +68,8 @@ app.use(express_1.default.urlencoded({ extended: true }));
 if (process.env.NODE_ENV === 'development') {
     app.use((0, morgan_1.default)('dev'));
 }
+// Serve uploads folder statically
+app.use('/uploads', express_1.default.static(path_1.default.join(process.cwd(), 'uploads')));
 // ─────────────────────────────────────────────
 // HEALTH CHECK
 // ─────────────────────────────────────────────
@@ -85,6 +93,9 @@ app.use('/api/v1/leaves', leave_routes_1.default);
 app.use('/api/v1/dashboard', dashboard_routes_1.default);
 app.use('/api/v1/attendance', attendance_routes_1.default);
 app.use('/api/v1/profile', profile_routes_1.default);
+app.use('/api/v1/payslips', payslip_routes_1.default);
+app.use('/api/v1/events', event_routes_1.default);
+app.use('/api/v1/holidays', holiday_routes_1.default);
 // ─────────────────────────────────────────────
 // ERROR HANDLING (must be last)
 // ─────────────────────────────────────────────

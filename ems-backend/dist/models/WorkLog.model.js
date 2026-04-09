@@ -23,7 +23,7 @@ const WorkLogSchema = new mongoose_1.Schema({
     hours: {
         type: Number,
         required: [true, 'Hours are required'],
-        min: [0.5, 'Minimum log is 0.5 hours'],
+        min: [0, 'Cannot log negative hours'],
         max: [10, 'Cannot log more than 10 hours per entry'],
     },
     notes: {
@@ -33,11 +33,9 @@ const WorkLogSchema = new mongoose_1.Schema({
     },
     startTime: {
         type: Date,
-        required: [true, 'Start time is required'],
     },
     endTime: {
         type: Date,
-        required: [true, 'End time is required'],
     },
     // Stored as midnight UTC for easy daily grouping
     date: {

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deactivateUser = exports.updateUser = exports.getUserById = exports.getActiveEmployees = exports.getAllUsers = exports.createUser = void 0;
+exports.activateUser = exports.deactivateUser = exports.updateUser = exports.getUserById = exports.getActiveEmployees = exports.getAllUsers = exports.createUser = void 0;
 const services_1 = require("../services");
 const asyncHandler_1 = require("../utils/asyncHandler");
 const userService = new services_1.UserService();
@@ -68,6 +68,16 @@ exports.deactivateUser = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
     res.status(200).json({
         success: true,
         message: 'User deactivated successfully',
+    });
+});
+// ─────────────────────────────────────────────
+// POST /api/v1/users/:id/activate [Admin]
+// ─────────────────────────────────────────────
+exports.activateUser = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+    await userService.activateUser(req.params.id);
+    res.status(200).json({
+        success: true,
+        message: 'User activated successfully',
     });
 });
 //# sourceMappingURL=user.controller.js.map

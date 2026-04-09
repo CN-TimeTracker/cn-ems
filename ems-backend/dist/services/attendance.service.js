@@ -2,30 +2,16 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AttendanceService = void 0;
 const models_1 = require("../models");
-// ─────────────────────────────────────────────
-// CONSTANTS
-// Office: 10:00 AM – 7:00 PM IST
-// Grace : 15 minutes → late after 10:15 AM IST
-// IST   : UTC + 5h 30m = UTC + 330 minutes
-// ─────────────────────────────────────────────
-const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // 330 min in ms
+const dateUtils_1 = require("../utils/dateUtils");
 const LATE_HOUR = 10; // 10 AM
 const LATE_MINUTE = 15; // grace ends at :15
 class AttendanceService {
     // ─────────────────────────────────────────────
     // HELPERS
     // ─────────────────────────────────────────────
-    /** Returns midnight UTC for the current IST day */
-    todayMidnightUTC() {
-        const nowIST = new Date(Date.now() + IST_OFFSET_MS);
-        const midnight = new Date(nowIST);
-        midnight.setUTCHours(0, 0, 0, 0);
-        // Convert back to real UTC midnight for the IST day
-        return new Date(midnight.getTime() - IST_OFFSET_MS);
-    }
     /** Returns true if punchInTime is after 10:15 AM IST */
     computeIsLate(punchInTime) {
-        const ist = new Date(punchInTime.getTime() + IST_OFFSET_MS);
+        const ist = new Date(punchInTime.getTime() + dateUtils_1.IST_OFFSET_MS);
         const hour = ist.getUTCHours();
         const minute = ist.getUTCMinutes();
         return hour > LATE_HOUR || (hour === LATE_HOUR && minute > LATE_MINUTE);
@@ -34,17 +20,24 @@ class AttendanceService {
     calcTotalBreakMs(breaks) {
         let total = 0;
         for (const b of breaks) {
+            const start = new Date(b.startTime).getTime();
             const end = b.endTime ? new Date(b.endTime).getTime() : Date.now();
-            total += end - new Date(b.startTime).getTime();
+            total += Math.max(0, end - start);
         }
         return total;
+    }
+    /** Calculate total work duration excluding breaks */
+    calculateWorkDuration(punchIn, punchOut, breaks) {
+        const totalMs = new Date(punchOut).getTime() - new Date(punchIn).getTime();
+        const breakMs = this.calcTotalBreakMs(breaks);
+        return Math.max(0, totalMs - breakMs);
     }
     // ─────────────────────────────────────────────
     // EMPLOYEE: punch in for today
     // ─────────────────────────────────────────────
     async punchIn(userId, input) {
         const now = new Date();
-        const today = this.todayMidnightUTC();
+        const today = (0, dateUtils_1.getISTMidnight)(now);
         const isLate = this.computeIsLate(now);
         // Allow creating the record without a reason initially so login can capture the exact time
         // The frontend will force the employee to fill it out separately if they are late.
@@ -70,7 +63,7 @@ class AttendanceService {
         if (!reason?.trim()) {
             throw new Error('A reason is required.');
         }
-        const today = this.todayMidnightUTC();
+        const today = (0, dateUtils_1.getISTMidnight)();
         const record = await models_1.Attendance.findOne({ userId, date: today });
         if (!record) {
             throw Object.assign(new Error('No attendance record found for today.'), { statusCode: 404 });
@@ -86,7 +79,7 @@ class AttendanceService {
     // EMPLOYEE: punch out for today
     // ─────────────────────────────────────────────
     async punchOut(userId) {
-        const today = this.todayMidnightUTC();
+        const today = (0, dateUtils_1.getISTMidnight)();
         const record = await models_1.Attendance.findOne({ userId, date: today });
         if (!record) {
             throw Object.assign(new Error('You have not punched in today.'), { statusCode: 400 });
@@ -102,6 +95,7 @@ class AttendanceService {
             record.markModified('breaks');
         }
         record.punchOutTime = new Date();
+        record.totalWorkMs = this.calculateWorkDuration(record.punchInTime, record.punchOutTime, breaks);
         await record.save();
         return record;
     }
@@ -109,7 +103,7 @@ class AttendanceService {
     // EMPLOYEE: start a break
     // ─────────────────────────────────────────────
     async startBreak(userId) {
-        const today = this.todayMidnightUTC();
+        const today = (0, dateUtils_1.getISTMidnight)();
         const record = await models_1.Attendance.findOne({ userId, date: today });
         if (!record) {
             throw Object.assign(new Error('You have not punched in today.'), { statusCode: 400 });
@@ -132,7 +126,7 @@ class AttendanceService {
     // EMPLOYEE: end a break
     // ─────────────────────────────────────────────
     async endBreak(userId) {
-        const today = this.todayMidnightUTC();
+        const today = (0, dateUtils_1.getISTMidnight)();
         const record = await models_1.Attendance.findOne({ userId, date: today });
         if (!record) {
             throw Object.assign(new Error('You have not punched in today.'), { statusCode: 400 });
@@ -151,14 +145,14 @@ class AttendanceService {
     // EMPLOYEE: get today's record for calling user
     // ─────────────────────────────────────────────
     async getTodayForUser(userId) {
-        const today = this.todayMidnightUTC();
+        const today = (0, dateUtils_1.getISTMidnight)();
         return models_1.Attendance.findOne({ userId, date: today }).lean();
     }
     // ─────────────────────────────────────────────
     // ADMIN: all employees with today's attendance
     // ─────────────────────────────────────────────
     async getAdminTodayView() {
-        const today = this.todayMidnightUTC();
+        const today = (0, dateUtils_1.getISTMidnight)();
         // All active employees
         const allUsers = await models_1.User.find({ isActive: true, role: { $ne: 'Admin' } })
             .select('name email role isActive createdAt')

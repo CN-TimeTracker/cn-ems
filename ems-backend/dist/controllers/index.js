@@ -21,4 +21,6 @@ __exportStar(require("./task.controller"), exports);
 __exportStar(require("./worklog.controller"), exports);
 __exportStar(require("./leave.controller"), exports);
 __exportStar(require("./dashboard.controller"), exports);
+__exportStar(require("./attendance.controller"), exports);
+__exportStar(require("./payslip.controller"), exports);
 //# sourceMappingURL=index.js.map

@@ -10,14 +10,16 @@ const router = (0, express_1.Router)();
 router.use(auth_middleware_1.protect);
 // GET    /api/v1/tasks/my         — employee's own tasks
 router.get('/my', task_controller_1.getMyTasks);
-// GET    /api/v1/tasks/overdue    — Admin only
-router.get('/overdue', auth_middleware_1.adminOnly, task_controller_1.getOverdueTasks);
 // GET    /api/v1/tasks            — Admin sees all; employee sees own
 router.get('/', task_controller_1.getTasks);
 // GET    /api/v1/tasks/:id
 router.get('/:id', task_controller_1.getTaskById);
-// POST   /api/v1/tasks            — Admin only
-router.post('/', auth_middleware_1.adminOnly, (0, validate_middleware_1.validate)(schemas_1.createTaskSchema), task_controller_1.createTask);
+// POST   /api/v1/tasks            — Now allowed for all (with assignment check in controller/service)
+router.post('/', (0, validate_middleware_1.validate)(schemas_1.createTaskSchema), task_controller_1.createTask);
+// Timer endpoints
+router.patch('/:id/start', task_controller_1.startTimer);
+router.patch('/:id/pause', task_controller_1.pauseTimer);
+router.patch('/:id/stop', task_controller_1.stopTimer);
 // PATCH  /api/v1/tasks/:id        — Admin: all fields; Employee: status only
 router.patch('/:id', (0, validate_middleware_1.validate)(schemas_1.updateTaskSchema), task_controller_1.updateTask);
 // DELETE /api/v1/tasks/:id        — Admin only

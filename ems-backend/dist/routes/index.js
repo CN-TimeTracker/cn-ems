@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.dashboardRoutes = exports.leaveRoutes = exports.worklogRoutes = exports.taskRoutes = exports.projectRoutes = exports.userRoutes = exports.authRoutes = void 0;
+exports.eventRoutes = exports.dashboardRoutes = exports.leaveRoutes = exports.worklogRoutes = exports.taskRoutes = exports.projectRoutes = exports.userRoutes = exports.authRoutes = void 0;
 var auth_routes_1 = require("./auth.routes");
 Object.defineProperty(exports, "authRoutes", { enumerable: true, get: function () { return __importDefault(auth_routes_1).default; } });
 var user_routes_1 = require("./user.routes");
@@ -18,4 +18,6 @@ var leave_routes_1 = require("./leave.routes");
 Object.defineProperty(exports, "leaveRoutes", { enumerable: true, get: function () { return __importDefault(leave_routes_1).default; } });
 var dashboard_routes_1 = require("./dashboard.routes");
 Object.defineProperty(exports, "dashboardRoutes", { enumerable: true, get: function () { return __importDefault(dashboard_routes_1).default; } });
+var event_routes_1 = require("./event.routes");
+Object.defineProperty(exports, "eventRoutes", { enumerable: true, get: function () { return __importDefault(event_routes_1).default; } });
 //# sourceMappingURL=index.js.map

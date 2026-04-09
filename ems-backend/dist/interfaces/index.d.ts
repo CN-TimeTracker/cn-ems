@@ -19,14 +19,40 @@ export declare enum ProjectStatus {
     Completed = "Completed"
 }
 export declare enum TaskStatus {
-    ToDo = "To Do",
-    InProgress = "In Progress",
-    Done = "Done"
+    CurrentlyWorking = "Currently Working",
+    DevelopmentCompNeedTesting = "Development Comp [Need Testing]",
+    DesignCompleted = "Design Completed",
+    ClientFeedback = "Client Feedback",
+    BugFixing = "Bug Fixing",
+    TestingStarted = "Testing Started",
+    IssueReportedNeedTesting = "Issue Reported [Need Testing]",
+    TestingVerified = "Testing Verified",
+    ProjectCompleted = "Project Completed",
+    MockupWorking = "Mockup Working",
+    MockupApproved = "Mockup Approved",
+    DevelopmentCompOnlyTesting = "Development Comp [Only Testing, No Designer]",
+    DevelopmentCompNeedDesigner = "Development Comp [Need Designer, No Testing]",
+    DesignCompNeedTesting = "Design Comp [Need Testing]",
+    WebsiteMovedToLiveNeedTesting = "Website Moved to live [Need Testing]",
+    WebsiteMovedToLiveVerified = "Website Moved to live [Verified Testing]"
 }
 export declare enum LeaveStatus {
     Pending = "Pending",
     Approved = "Approved",
     Rejected = "Rejected"
+}
+export declare enum LeaveType {
+    Casual = "Casual",
+    Sick = "Sick",
+    Emergency = "Emergency"
+}
+export declare enum LeaveDuration {
+    FullDay = "Full Day",
+    HalfDay = "Half Day"
+}
+export declare enum HalfDayType {
+    FirstHalf = "First Half",
+    SecondHalf = "Second Half"
 }
 export interface IJwtPayload {
     id: string;
@@ -45,6 +71,7 @@ export interface IUser extends Document {
     password: string;
     role: UserRole;
     isActive: boolean;
+    profilePicture?: string;
     employeeCode?: string;
     username?: string;
     phoneNumber?: string;
@@ -91,15 +118,19 @@ export interface IUserPublic {
     aadharNo?: string;
     panNo?: string;
     createdAt: Date;
+    profilePicture?: string;
 }
 export interface IProject extends Document {
     _id: Types.ObjectId;
     name: string;
     clientName: string;
+    category: string;
     description?: string;
     startDate: Date;
     deadline: Date;
     status: ProjectStatus;
+    allocatedHours: number;
+    assignedTo: Types.ObjectId[];
     createdBy: Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
@@ -107,12 +138,15 @@ export interface IProject extends Document {
 export interface ITask extends Document {
     _id: Types.ObjectId;
     projectId: Types.ObjectId;
-    title: string;
+    workType: string;
     description?: string;
     assignedTo: Types.ObjectId;
-    roleTag: UserRole;
     status: TaskStatus;
-    deadline: Date;
+    date: Date;
+    time: string;
+    totalMinutesSpent: number;
+    isRunning: boolean;
+    lastStartedAt: Date | null;
     createdBy: Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
@@ -124,8 +158,8 @@ export interface IWorkLog extends Document {
     taskId: Types.ObjectId;
     hours: number;
     notes?: string;
-    startTime: Date;
-    endTime: Date;
+    startTime?: Date;
+    endTime?: Date;
     date: Date;
     createdAt: Date;
     updatedAt: Date;
@@ -137,6 +171,9 @@ export interface ILeave extends Document {
     endDate: Date;
     reason: string;
     status: LeaveStatus;
+    leaveType: LeaveType;
+    duration: LeaveDuration;
+    halfDayType?: HalfDayType;
     reviewedBy?: Types.ObjectId;
     reviewedAt?: Date;
     createdAt: Date;
@@ -153,6 +190,7 @@ export interface IAttendance extends Document {
     punchInTime: Date;
     punchOutTime?: Date;
     breaks: IBreakEntry[];
+    totalWorkMs?: number;
     isLate: boolean;
     lateReason?: string;
     createdAt: Date;
@@ -191,6 +229,7 @@ export interface ICreateUserInput {
 }
 export interface IUpdateUserInput {
     name?: string;
+    password?: string;
     role?: UserRole;
     isActive?: boolean;
     employeeCode?: string;
@@ -214,7 +253,8 @@ export interface IUpdateUserInput {
 export declare enum ProfileUpdateRequestStatus {
     Pending = "Pending",
     Approved = "Approved",
-    Rejected = "Rejected"
+    Rejected = "Rejected",
+    Revoked = "Revoked"
 }
 export interface IProfileUpdateChanges {
     name?: string;
@@ -227,12 +267,13 @@ export interface IProfileUpdateChanges {
     permanentAddress?: string;
     description?: string;
 }
-export interface IProfileUpdateRequest extends Document {
-    _id: Types.ObjectId;
-    userId: Types.ObjectId;
+export interface IProfileUpdateRequest {
+    _id: string;
+    userId: string | IUser;
     requestedChanges: IProfileUpdateChanges;
+    previousValues?: IProfileUpdateChanges;
     status: ProfileUpdateRequestStatus;
-    reviewedBy?: Types.ObjectId;
+    reviewedBy?: string | IUser;
     reviewedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
@@ -240,46 +281,49 @@ export interface IProfileUpdateRequest extends Document {
 export interface ICreateProjectInput {
     name: string;
     clientName: string;
+    category: string;
     description?: string;
     startDate: Date;
     deadline: Date;
+    allocatedHours: number;
+    assignedTo?: string[];
 }
 export interface IUpdateProjectInput {
     name?: string;
     clientName?: string;
+    category?: string;
     description?: string;
     startDate?: Date;
     deadline?: Date;
     status?: ProjectStatus;
+    allocatedHours?: number;
+    assignedTo?: string[];
 }
 export interface ICreateTaskInput {
     projectId: string;
-    title: string;
+    workType: string;
     description?: string;
-    assignedTo: string;
-    roleTag: UserRole;
-    deadline: Date;
+    status?: TaskStatus;
 }
 export interface IUpdateTaskInput {
-    title?: string;
+    workType?: string;
     description?: string;
-    assignedTo?: string;
-    roleTag?: UserRole;
     status?: TaskStatus;
-    deadline?: Date;
 }
 export interface ITaskFilters {
     projectId?: string;
     assignedTo?: string;
     status?: TaskStatus;
+    startDate?: string;
+    endDate?: string;
 }
 export interface ICreateWorkLogInput {
     projectId: string;
     taskId?: string;
     hours: number;
     notes?: string;
-    startTime: Date;
-    endTime: Date;
+    startTime?: Date;
+    endTime?: Date;
     date?: Date;
 }
 export interface IWorkLogFilters {
@@ -292,6 +336,9 @@ export interface ICreateLeaveInput {
     startDate: Date;
     endDate: Date;
     reason: string;
+    leaveType: LeaveType;
+    duration: LeaveDuration;
+    halfDayType?: HalfDayType;
 }
 export interface IReviewLeaveInput {
     status: LeaveStatus.Approved | LeaveStatus.Rejected;
@@ -317,7 +364,6 @@ export interface IAdminDashboardData {
         user: IUserPublic;
         totalHours: number;
     }[];
-    overdueTasks: ITask[];
     projectHours: {
         project: string;
         totalHours: number;
@@ -330,5 +376,39 @@ export interface IEmployeeDashboardData {
     todaysLoggedHours: number;
     pendingTasks: ITask[];
     recentLogs: IWorkLog[];
+    todayAttendance?: IAttendance;
+    totalProjects: number;
+    totalLeaves: number;
+    projectBreakdown: {
+        projectId: string;
+        name: string;
+        clientName: string;
+        category: string;
+        allocatedHours: number;
+        workedHours: number;
+        deadline: Date;
+    }[];
+}
+export interface IPayslip extends Document {
+    _id: Types.ObjectId;
+    userId: Types.ObjectId;
+    month: number;
+    year: number;
+    fileUrl: string;
+    filename: string;
+    uploadedBy: Types.ObjectId;
+    createdAt: Date;
+    updatedAt: Date;
+}
+export interface ISalaryRecord extends Document {
+    _id: Types.ObjectId;
+    userId: Types.ObjectId;
+    month: number;
+    year: number;
+    lopOverride?: number;
+    isApproved: boolean;
+    approvedBy?: Types.ObjectId;
+    createdAt: Date;
+    updatedAt: Date;
 }
 //# sourceMappingURL=index.d.ts.map

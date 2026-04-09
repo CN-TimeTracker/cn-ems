@@ -8,8 +8,12 @@ const schemas_1 = require("../middleware/schemas");
 const router = (0, express_1.Router)();
 // All routes require authentication
 router.use(auth_middleware_1.protect);
+// GET    /api/v1/projects/assigned — projects assigned to the user
+router.get('/assigned', project_controller_1.getAssignedProjects);
 // GET    /api/v1/projects/active  — all authenticated users
 router.get('/active', project_controller_1.getActiveProjects);
+// GET    /api/v1/projects/:id/remaining — remaining hours
+router.get('/:id/remaining', project_controller_1.getProjectRemainingHours);
 // GET    /api/v1/projects          — all authenticated users
 router.get('/', project_controller_1.getAllProjects);
 // GET    /api/v1/projects/:id      — all authenticated users

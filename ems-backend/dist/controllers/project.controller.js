@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteProject = exports.updateProject = exports.getProjectById = exports.getActiveProjects = exports.getAllProjects = exports.createProject = void 0;
+exports.getProjectRemainingHours = exports.getAssignedProjects = exports.deleteProject = exports.updateProject = exports.getProjectById = exports.getActiveProjects = exports.getAllProjects = exports.createProject = void 0;
 const services_1 = require("../services");
 const asyncHandler_1 = require("../utils/asyncHandler");
 const projectService = new services_1.ProjectService();
@@ -67,6 +67,27 @@ exports.deleteProject = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
     res.status(200).json({
         success: true,
         message: 'Project deleted successfully',
+    });
+});
+// ─────────────────────────────────────────────
+// GET /api/v1/projects/assigned [Protected]
+// ─────────────────────────────────────────────
+exports.getAssignedProjects = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+    const projects = await projectService.getAssignedProjects(req.user.id);
+    res.status(200).json({
+        success: true,
+        count: projects.length,
+        data: projects,
+    });
+});
+// ─────────────────────────────────────────────
+// GET /api/v1/projects/:id/remaining [Protected]
+// ─────────────────────────────────────────────
+exports.getProjectRemainingHours = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+    const status = await projectService.getProjectRemainingHours(req.params.id);
+    res.status(200).json({
+        success: true,
+        data: status,
     });
 });
 //# sourceMappingURL=project.controller.js.map

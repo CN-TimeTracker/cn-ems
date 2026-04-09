@@ -1,6 +1,10 @@
 import { IProject, ICreateProjectInput, IUpdateProjectInput } from '../interfaces';
 export declare class ProjectService {
     /**
+     * Helper to add business days (skipping weekends)
+     */
+    private addBusinessDays;
+    /**
      * Creates a new project. createdBy is injected from the JWT payload in the controller.
      */
     createProject(input: ICreateProjectInput, createdBy: string): Promise<IProject>;
@@ -17,6 +21,18 @@ export declare class ProjectService {
      * Returns a single project with creator info.
      */
     getProjectById(id: string): Promise<IProject>;
+    /**
+     * Returns projects assigned to a specific user.
+     */
+    getAssignedProjects(userId: string): Promise<IProject[]>;
+    /**
+     * Calculates remaining hours for a project.
+     */
+    getProjectRemainingHours(projectId: string): Promise<{
+        allocated: number;
+        spent: number;
+        remaining: number;
+    }>;
     /**
      * Admin can update any project field, including marking it Completed.
      */

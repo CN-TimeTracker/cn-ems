@@ -38,6 +38,9 @@ const AttendanceSchema = new mongoose_1.Schema({
         type: [BreakEntrySchema],
         default: [],
     },
+    totalWorkMs: {
+        type: Number,
+    },
     // Computed on creation: true if after grace period (10:15 AM IST)
     isLate: {
         type: Boolean,

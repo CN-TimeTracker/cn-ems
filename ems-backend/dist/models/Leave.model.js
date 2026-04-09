@@ -36,6 +36,23 @@ const LeaveSchema = new mongoose_1.Schema({
         enum: Object.values(interfaces_1.LeaveStatus),
         default: interfaces_1.LeaveStatus.Pending,
     },
+    leaveType: {
+        type: String,
+        enum: Object.values(interfaces_1.LeaveType),
+        required: [true, 'Leave type is required'],
+    },
+    duration: {
+        type: String,
+        enum: Object.values(interfaces_1.LeaveDuration),
+        default: interfaces_1.LeaveDuration.FullDay,
+    },
+    halfDayType: {
+        type: String,
+        enum: Object.values(interfaces_1.HalfDayType),
+        required: function () {
+            return this.duration === interfaces_1.LeaveDuration.HalfDay;
+        },
+    },
     // Populated when an Admin approves or rejects
     reviewedBy: {
         type: mongoose_1.Schema.Types.ObjectId,

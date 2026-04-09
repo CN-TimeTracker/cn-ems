@@ -147,9 +147,7 @@ export default function TasksPage() {
   const { data: projects } = useActiveProjects();
   const { data: employees } = useActiveEmployees();
 
-  const hasRunningTask = useMemo(() => {
-    return tasks?.some((t) => t.isRunning);
-  }, [tasks]);
+  const hasRunningTask = !!tasks?.some((t) => t.isRunning);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters((prev: any) => ({

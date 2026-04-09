@@ -188,6 +188,7 @@ export enum ProfileUpdateRequestStatus {
   Pending = 'Pending',
   Approved = 'Approved',
   Rejected = 'Rejected',
+  Revoked = 'Revoked',
 }
 
 export interface ProfileUpdateChanges {
@@ -200,12 +201,14 @@ export interface ProfileUpdateChanges {
   currentAddress?: string;
   permanentAddress?: string;
   description?: string;
+  displayDateOfBirth?: string;
 }
 
 export interface ProfileUpdateRequest {
   _id: string;
   userId: string | User;
   requestedChanges: ProfileUpdateChanges;
+  previousValues?: ProfileUpdateChanges;
   status: ProfileUpdateRequestStatus;
   reviewedBy?: string;
   reviewedAt?: string;

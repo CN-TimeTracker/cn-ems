@@ -10,13 +10,19 @@ const ProjectSchema = new mongoose_1.Schema({
         type: String,
         required: [true, 'Project name is required'],
         trim: true,
-        maxlength: [150, 'Project name cannot exceed 150 chara'],
+        maxlength: [150, 'Project name cannot exceed 150 characters'],
     },
     clientName: {
         type: String,
         required: [true, 'Client name is required'],
         trim: true,
         maxlength: [100, 'Client name cannot exceed 100 characters'],
+    },
+    category: {
+        type: String,
+        required: [true, 'Category is required'],
+        enum: ['Custom Product', 'Support', 'Product'],
+        default: 'Product',
     },
     description: {
         type: String,
@@ -30,19 +36,21 @@ const ProjectSchema = new mongoose_1.Schema({
     deadline: {
         type: Date,
         required: [true, 'Deadline is required'],
-        validate: {
-            // Deadline must be after startDate
-            validator: function (value) {
-                return value > this.startDate;
-            },
-            message: 'Deadline must be after the start date',
-        },
     },
     status: {
         type: String,
         enum: Object.values(interfaces_1.ProjectStatus),
         default: interfaces_1.ProjectStatus.Active,
     },
+    allocatedHours: {
+        type: Number,
+        required: [true, 'Allocated hours are required'],
+        default: 0,
+    },
+    assignedTo: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'User',
+        }],
     createdBy: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',

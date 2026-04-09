@@ -22,5 +22,7 @@ router.get('/:id', user_controller_1.getUserById);
 router.patch('/:id', (0, validate_middleware_1.validate)(schemas_1.updateUserSchema), user_controller_1.updateUser);
 // DELETE /api/v1/users/:id     (soft delete)
 router.delete('/:id', user_controller_1.deactivateUser);
+// POST   /api/v1/users/:id/activate
+router.post('/:id/activate', user_controller_1.activateUser);
 exports.default = router;
 //# sourceMappingURL=user.routes.js.map

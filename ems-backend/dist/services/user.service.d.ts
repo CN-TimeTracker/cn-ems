@@ -28,5 +28,9 @@ export declare class UserService {
      * Preserves all historical logs and task assignments.
      */
     deactivateUser(id: string): Promise<void>;
+    /**
+     * Reactivate user.
+     */
+    activateUser(id: string): Promise<void>;
 }
 //# sourceMappingURL=user.service.d.ts.map

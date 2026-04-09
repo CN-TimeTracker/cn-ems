@@ -5,4 +5,5 @@ export declare const getActiveEmployees: (req: import("express").Request, res: R
 export declare const getUserById: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const updateUser: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const deactivateUser: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const activateUser: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 //# sourceMappingURL=user.controller.d.ts.map

@@ -23,6 +23,24 @@ const toPublic = (user) => ({
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    employeeCode: user.employeeCode,
+    username: user.username,
+    phoneNumber: user.phoneNumber,
+    dateOfJoining: user.dateOfJoining,
+    dateOfBirth: user.dateOfBirth,
+    gender: user.gender,
+    fatherName: user.fatherName,
+    currentAddress: user.currentAddress,
+    permanentAddress: user.permanentAddress,
+    description: user.description,
+    salary: user.salary,
+    bankName: user.bankName,
+    accountNo: user.accountNo,
+    branchName: user.branchName,
+    ifscCode: user.ifscCode,
+    aadharNo: user.aadharNo,
+    panNo: user.panNo,
+    profilePicture: user.profilePicture,
     createdAt: user.createdAt,
 });
 // ─────────────────────────────────────────────
@@ -34,7 +52,8 @@ class AuthService {
      * Throws a plain Error with a message on failure — controller decides HTTP status.
      */
     async login(input) {
-        const { email, password } = input;
+        const email = input.email.toLowerCase();
+        const { password } = input;
         // .select('+password') because password field has select:false on the schema
         const user = await User_model_1.default.findOne({ email }).select('+password');
         if (!user) {

@@ -16,13 +16,21 @@ exports.login = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
     if (result.user.role !== 'Admin') {
         try {
             const today = await attendanceService.getTodayForUser(result.user._id);
-            if (today) {
-                // If already punched in today, resume the shift (end the "logged out" break)
-                await attendanceService.endBreak(result.user._id);
+            if (!today) {
+                // First login of the day: check if late reason is needed
+                const now = new Date();
+                const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+                const ist = new Date(now.getTime() + IST_OFFSET_MS);
+                const hour = ist.getUTCHours();
+                const minute = ist.getUTCMinutes();
+                const isLateValue = hour > 9 || (hour === 9 && minute > 15);
+                // First login of the day: punch in automatically
+                // Late reason will be asked in the dashboard modal
+                await attendanceService.punchIn(result.user._id, { lateReason });
             }
             else {
-                // First login of the day: create the punch-in record
-                await attendanceService.punchIn(result.user._id, { lateReason });
+                // Already punched in today, just resume shift (end break)
+                await attendanceService.endBreak(result.user._id);
             }
         }
         catch (err) {

@@ -68,6 +68,11 @@ exports.createProjectSchema = zod_1.z.object({
     description: zod_1.z.string().max(1000).optional(),
     startDate: zod_1.z.string().refine((d) => !isNaN(Date.parse(d)), 'Invalid start date'),
     deadline: zod_1.z.string().refine((d) => !isNaN(Date.parse(d)), 'Invalid deadline'),
+    allocatedHours: zod_1.z.number().min(0, 'Allocated hours cannot be negative'),
+    assignedTo: zod_1.z.array(zod_1.z.string()).optional(),
+}).refine((data) => new Date(data.deadline) > new Date(data.startDate), {
+    message: 'Deadline must be after the start date',
+    path: ['deadline'],
 });
 exports.updateProjectSchema = zod_1.z.object({
     name: zod_1.z.string().min(2).max(150).optional(),
@@ -76,25 +81,30 @@ exports.updateProjectSchema = zod_1.z.object({
     startDate: zod_1.z.string().refine((d) => !isNaN(Date.parse(d)), 'Invalid date').optional(),
     deadline: zod_1.z.string().refine((d) => !isNaN(Date.parse(d)), 'Invalid date').optional(),
     status: zod_1.z.nativeEnum(interfaces_1.ProjectStatus).optional(),
+    allocatedHours: zod_1.z.number().min(0).optional(),
+    assignedTo: zod_1.z.array(zod_1.z.string()).optional(),
+}).refine((data) => {
+    if (data.startDate && data.deadline) {
+        return new Date(data.deadline) > new Date(data.startDate);
+    }
+    return true;
+}, {
+    message: 'Deadline must be after the start date',
+    path: ['deadline'],
 });
 // ─────────────────────────────────────────────
 // TASK
 // ─────────────────────────────────────────────
 exports.createTaskSchema = zod_1.z.object({
     projectId: zod_1.z.string().min(1, 'Project is required'),
-    title: zod_1.z.string().min(2, 'Task title is required').max(200),
+    workType: zod_1.z.string().min(1, 'Work type is required'),
     description: zod_1.z.string().max(2000).optional(),
-    assignedTo: zod_1.z.string().min(1, 'Assignee is required'),
-    roleTag: zod_1.z.nativeEnum(interfaces_1.UserRole),
-    deadline: zod_1.z.string().refine((d) => !isNaN(Date.parse(d)), 'Invalid deadline'),
+    status: zod_1.z.nativeEnum(interfaces_1.TaskStatus).optional(),
 });
 exports.updateTaskSchema = zod_1.z.object({
-    title: zod_1.z.string().min(2).max(200).optional(),
+    workType: zod_1.z.string().min(1).optional(),
     description: zod_1.z.string().max(2000).optional(),
-    assignedTo: zod_1.z.string().optional(),
-    roleTag: zod_1.z.nativeEnum(interfaces_1.UserRole).optional(),
     status: zod_1.z.nativeEnum(interfaces_1.TaskStatus).optional(),
-    deadline: zod_1.z.string().refine((d) => !isNaN(Date.parse(d)), 'Invalid date').optional(),
 });
 // ─────────────────────────────────────────────
 // WORK LOG
@@ -104,7 +114,7 @@ exports.createWorkLogSchema = zod_1.z.object({
     taskId: zod_1.z.string().min(1, 'Task is required'),
     hours: zod_1.z
         .number()
-        .min(0.5, 'Minimum 0.5 hours')
+        .min(0, 'Cannot log negative hours')
         .max(10, 'Maximum 10 hours per entry'),
     notes: zod_1.z.string().max(500).optional(),
     date: zod_1.z
@@ -119,6 +129,25 @@ exports.createLeaveSchema = zod_1.z.object({
     startDate: zod_1.z.string().refine((d) => !isNaN(Date.parse(d)), 'Invalid start date'),
     endDate: zod_1.z.string().refine((d) => !isNaN(Date.parse(d)), 'Invalid end date'),
     reason: zod_1.z.string().min(5, 'Please provide a reason').max(500),
+    leaveType: zod_1.z.nativeEnum(interfaces_1.LeaveType),
+    duration: zod_1.z.nativeEnum(interfaces_1.LeaveDuration),
+    halfDayType: zod_1.z.nativeEnum(interfaces_1.HalfDayType).optional(),
+}).superRefine((data, ctx) => {
+    if (data.leaveType === interfaces_1.LeaveType.Casual) {
+        const today = new Date();
+        const minDate = new Date(today);
+        minDate.setDate(today.getDate() + 5);
+        // Create standard YYYY-MM-DD comparisons
+        const minStr = minDate.toISOString().split('T')[0];
+        const startStr = data.startDate;
+        if (startStr < minStr) {
+            ctx.addIssue({
+                code: zod_1.z.ZodIssueCode.custom,
+                message: 'Casual leaves must be applied at least 5 days in advance',
+                path: ['startDate'],
+            });
+        }
+    }
 });
 exports.reviewLeaveSchema = zod_1.z.object({
     status: zod_1.z.enum([interfaces_1.LeaveStatus.Approved, interfaces_1.LeaveStatus.Rejected], {

@@ -197,7 +197,7 @@ export default function UsersPage() {
                 confirmModal.type === 'activate' ? "bg-green-600 hover:bg-green-700 shadow-green-100" : "bg-red-600 hover:bg-red-700 shadow-red-100"
               )}
             >
-              {deactivating || activating ? <Spinner size="sm" color="white" /> : (confirmModal.type === 'activate' ? 'Activate Now' : 'Deactivate Now')}
+              {deactivating || activating ? <Spinner size="sm"  /> : (confirmModal.type === 'activate' ? 'Activate Now' : 'Deactivate Now')}
             </button>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UserRole, ProjectStatus, TaskStatus, LeaveStatus } from '../interfaces';
+import { UserRole, ProjectStatus, TaskStatus, LeaveStatus, LeaveType, LeaveDuration, HalfDayType } from '../interfaces';
 export declare const loginSchema: z.ZodObject<{
     email: z.ZodString;
     password: z.ZodString;
@@ -144,32 +144,56 @@ export declare const updateUserSchema: z.ZodObject<{
     aadharNo?: string | undefined;
     panNo?: string | undefined;
 }>;
-export declare const createProjectSchema: z.ZodObject<{
+export declare const createProjectSchema: z.ZodEffects<z.ZodObject<{
     name: z.ZodString;
     clientName: z.ZodString;
     description: z.ZodOptional<z.ZodString>;
     startDate: z.ZodEffects<z.ZodString, string, string>;
     deadline: z.ZodEffects<z.ZodString, string, string>;
+    allocatedHours: z.ZodNumber;
+    assignedTo: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
 }, "strip", z.ZodTypeAny, {
     name: string;
     clientName: string;
     startDate: string;
     deadline: string;
+    allocatedHours: number;
     description?: string | undefined;
+    assignedTo?: string[] | undefined;
 }, {
     name: string;
     clientName: string;
     startDate: string;
     deadline: string;
+    allocatedHours: number;
     description?: string | undefined;
+    assignedTo?: string[] | undefined;
+}>, {
+    name: string;
+    clientName: string;
+    startDate: string;
+    deadline: string;
+    allocatedHours: number;
+    description?: string | undefined;
+    assignedTo?: string[] | undefined;
+}, {
+    name: string;
+    clientName: string;
+    startDate: string;
+    deadline: string;
+    allocatedHours: number;
+    description?: string | undefined;
+    assignedTo?: string[] | undefined;
 }>;
-export declare const updateProjectSchema: z.ZodObject<{
+export declare const updateProjectSchema: z.ZodEffects<z.ZodObject<{
     name: z.ZodOptional<z.ZodString>;
     clientName: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
     startDate: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     deadline: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     status: z.ZodOptional<z.ZodNativeEnum<typeof ProjectStatus>>;
+    allocatedHours: z.ZodOptional<z.ZodNumber>;
+    assignedTo: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
 }, "strip", z.ZodTypeAny, {
     name?: string | undefined;
     description?: string | undefined;
@@ -177,6 +201,8 @@ export declare const updateProjectSchema: z.ZodObject<{
     startDate?: string | undefined;
     deadline?: string | undefined;
     status?: ProjectStatus | undefined;
+    allocatedHours?: number | undefined;
+    assignedTo?: string[] | undefined;
 }, {
     name?: string | undefined;
     description?: string | undefined;
@@ -184,50 +210,55 @@ export declare const updateProjectSchema: z.ZodObject<{
     startDate?: string | undefined;
     deadline?: string | undefined;
     status?: ProjectStatus | undefined;
+    allocatedHours?: number | undefined;
+    assignedTo?: string[] | undefined;
+}>, {
+    name?: string | undefined;
+    description?: string | undefined;
+    clientName?: string | undefined;
+    startDate?: string | undefined;
+    deadline?: string | undefined;
+    status?: ProjectStatus | undefined;
+    allocatedHours?: number | undefined;
+    assignedTo?: string[] | undefined;
+}, {
+    name?: string | undefined;
+    description?: string | undefined;
+    clientName?: string | undefined;
+    startDate?: string | undefined;
+    deadline?: string | undefined;
+    status?: ProjectStatus | undefined;
+    allocatedHours?: number | undefined;
+    assignedTo?: string[] | undefined;
 }>;
 export declare const createTaskSchema: z.ZodObject<{
     projectId: z.ZodString;
-    title: z.ZodString;
+    workType: z.ZodString;
     description: z.ZodOptional<z.ZodString>;
-    assignedTo: z.ZodString;
-    roleTag: z.ZodNativeEnum<typeof UserRole>;
-    deadline: z.ZodEffects<z.ZodString, string, string>;
+    status: z.ZodOptional<z.ZodNativeEnum<typeof TaskStatus>>;
 }, "strip", z.ZodTypeAny, {
-    deadline: string;
     projectId: string;
-    title: string;
-    assignedTo: string;
-    roleTag: UserRole;
+    workType: string;
     description?: string | undefined;
+    status?: TaskStatus | undefined;
 }, {
-    deadline: string;
     projectId: string;
-    title: string;
-    assignedTo: string;
-    roleTag: UserRole;
+    workType: string;
     description?: string | undefined;
+    status?: TaskStatus | undefined;
 }>;
 export declare const updateTaskSchema: z.ZodObject<{
-    title: z.ZodOptional<z.ZodString>;
+    workType: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
-    assignedTo: z.ZodOptional<z.ZodString>;
-    roleTag: z.ZodOptional<z.ZodNativeEnum<typeof UserRole>>;
     status: z.ZodOptional<z.ZodNativeEnum<typeof TaskStatus>>;
-    deadline: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 }, "strip", z.ZodTypeAny, {
     description?: string | undefined;
-    deadline?: string | undefined;
     status?: TaskStatus | undefined;
-    title?: string | undefined;
-    assignedTo?: string | undefined;
-    roleTag?: UserRole | undefined;
+    workType?: string | undefined;
 }, {
     description?: string | undefined;
-    deadline?: string | undefined;
     status?: TaskStatus | undefined;
-    title?: string | undefined;
-    assignedTo?: string | undefined;
-    roleTag?: UserRole | undefined;
+    workType?: string | undefined;
 }>;
 export declare const createWorkLogSchema: z.ZodObject<{
     projectId: z.ZodString;
@@ -248,18 +279,41 @@ export declare const createWorkLogSchema: z.ZodObject<{
     date?: string | undefined;
     notes?: string | undefined;
 }>;
-export declare const createLeaveSchema: z.ZodObject<{
+export declare const createLeaveSchema: z.ZodEffects<z.ZodObject<{
     startDate: z.ZodEffects<z.ZodString, string, string>;
     endDate: z.ZodEffects<z.ZodString, string, string>;
     reason: z.ZodString;
+    leaveType: z.ZodNativeEnum<typeof LeaveType>;
+    duration: z.ZodNativeEnum<typeof LeaveDuration>;
+    halfDayType: z.ZodOptional<z.ZodNativeEnum<typeof HalfDayType>>;
 }, "strip", z.ZodTypeAny, {
     startDate: string;
     endDate: string;
     reason: string;
+    leaveType: LeaveType;
+    duration: LeaveDuration;
+    halfDayType?: HalfDayType | undefined;
 }, {
     startDate: string;
     endDate: string;
     reason: string;
+    leaveType: LeaveType;
+    duration: LeaveDuration;
+    halfDayType?: HalfDayType | undefined;
+}>, {
+    startDate: string;
+    endDate: string;
+    reason: string;
+    leaveType: LeaveType;
+    duration: LeaveDuration;
+    halfDayType?: HalfDayType | undefined;
+}, {
+    startDate: string;
+    endDate: string;
+    reason: string;
+    leaveType: LeaveType;
+    duration: LeaveDuration;
+    halfDayType?: HalfDayType | undefined;
 }>;
 export declare const reviewLeaveSchema: z.ZodObject<{
     status: z.ZodEnum<[LeaveStatus.Approved, LeaveStatus.Rejected]>;

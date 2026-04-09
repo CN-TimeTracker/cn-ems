@@ -31,14 +31,22 @@ export declare class TaskService {
      */
     deleteTask(id: string): Promise<void>;
     /**
-     * Returns all overdue tasks (past deadline, not Done).
-     * Used by the accountability engine on the Admin dashboard.
-     */
-    getOverdueTasks(): Promise<ITask[]>;
-    /**
      * Returns user IDs that have NO tasks assigned (accountability engine).
      */
     getUsersWithNoTasks(allUserIds: string[]): Promise<string[]>;
+    /**
+     * Starts the timer for a task.
+     * Auto-pauses any other running tasks for the same user.
+     */
+    startTimer(taskId: string, userId: string): Promise<ITask>;
+    /**
+     * Pauses the timer and accumulates elapsed minutes.
+     */
+    pauseTimer(taskId: string, userId: string): Promise<ITask>;
+    /**
+     * Stops the timer, accumulates time, and marks task as Done.
+     */
+    stopTimer(taskId: string, userId: string): Promise<ITask>;
     /** Centralized population to keep it DRY across all task queries */
     private _populate;
 }

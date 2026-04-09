@@ -5,4 +5,5 @@ export { default as taskRoutes } from './task.routes';
 export { default as worklogRoutes } from './worklog.routes';
 export { default as leaveRoutes } from './leave.routes';
 export { default as dashboardRoutes } from './dashboard.routes';
+export { default as eventRoutes } from './event.routes';
 //# sourceMappingURL=index.d.ts.map

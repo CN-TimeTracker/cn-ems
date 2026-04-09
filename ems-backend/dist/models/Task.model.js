@@ -11,11 +11,10 @@ const TaskSchema = new mongoose_1.Schema({
         ref: 'Project',
         required: [true, 'Project is required'],
     },
-    title: {
+    workType: {
         type: String,
-        required: [true, 'Task title is required'],
+        required: [true, 'Work type is required'],
         trim: true,
-        maxlength: [200, 'Title cannot exceed 200 characters'],
     },
     description: {
         type: String,
@@ -28,19 +27,30 @@ const TaskSchema = new mongoose_1.Schema({
         ref: 'User',
         required: [true, 'Task must be assigned to a user'],
     },
-    roleTag: {
+    date: {
+        type: Date,
+        required: [true, 'Date is required'],
+    },
+    time: {
         type: String,
-        enum: Object.values(interfaces_1.UserRole),
-        required: [true, 'Role tag is required'],
+        required: [true, 'Time is required'],
     },
     status: {
         type: String,
         enum: Object.values(interfaces_1.TaskStatus),
-        default: interfaces_1.TaskStatus.ToDo,
+        default: interfaces_1.TaskStatus.CurrentlyWorking,
     },
-    deadline: {
+    totalMinutesSpent: {
+        type: Number,
+        default: 0,
+    },
+    isRunning: {
+        type: Boolean,
+        default: false,
+    },
+    lastStartedAt: {
         type: Date,
-        required: [true, 'Task deadline is required'],
+        default: null,
     },
     createdBy: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -57,7 +67,7 @@ const TaskSchema = new mongoose_1.Schema({
 TaskSchema.index({ projectId: 1 });
 TaskSchema.index({ assignedTo: 1 });
 TaskSchema.index({ status: 1 });
-TaskSchema.index({ deadline: 1 });
+TaskSchema.index({ date: -1 });
 // Compound: quickly find all tasks for a user on a project
 TaskSchema.index({ projectId: 1, assignedTo: 1 });
 // ─────────────────────────────────────────────

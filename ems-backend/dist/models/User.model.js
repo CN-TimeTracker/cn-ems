@@ -40,7 +40,7 @@ const UserSchema = new mongoose_1.Schema({
         default: true,
     },
     // ── Employee General Details ──
-    employeeCode: { type: String, trim: true },
+    employeeCode: { type: String, trim: true, unique: true, sparse: true },
     username: { type: String, trim: true },
     phoneNumber: { type: String, trim: true },
     dateOfJoining: { type: Date },
@@ -58,6 +58,7 @@ const UserSchema = new mongoose_1.Schema({
     ifscCode: { type: String, trim: true },
     aadharNo: { type: String, trim: true },
     panNo: { type: String, trim: true },
+    profilePicture: { type: String, trim: true },
 }, {
     timestamps: true, // auto-manages createdAt / updatedAt
     versionKey: false,

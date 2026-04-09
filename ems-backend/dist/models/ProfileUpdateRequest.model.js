@@ -22,6 +22,17 @@ const ProfileUpdateRequestSchema = new mongoose_1.Schema({
         permanentAddress: { type: String, trim: true },
         description: { type: String, trim: true },
     },
+    previousValues: {
+        name: { type: String, trim: true },
+        username: { type: String, trim: true },
+        phoneNumber: { type: String, trim: true },
+        dateOfBirth: { type: Date },
+        gender: { type: String, enum: Object.values(interfaces_1.Gender) },
+        fatherName: { type: String, trim: true },
+        currentAddress: { type: String, trim: true },
+        permanentAddress: { type: String, trim: true },
+        description: { type: String, trim: true },
+    },
     status: {
         type: String,
         enum: Object.values(interfaces_1.ProfileUpdateRequestStatus),

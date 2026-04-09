@@ -19,21 +19,34 @@ interface Props {
   project?: Project | null;
 }
 
-const blank: any = { 
-  name: '', 
-  clientName: '', 
+type ProjectForm = {
+  name: string;
+  clientName: string;
+  category: string;
+  description: string;
+  startDate: string;
+  displayStartDate: string;
+  deadline: string;
+  status: ProjectStatus;
+  allocatedHours: number;
+  assignedTo: string[];
+};
+
+const blank: ProjectForm = {
+  name: '',
+  clientName: '',
   category: 'Product',
-  description: '', 
-  startDate: format(new Date(), 'yyyy-MM-dd'), 
+  description: '',
+  startDate: format(new Date(), 'yyyy-MM-dd'),
   displayStartDate: formatAppDate(new Date()),
-  deadline: '', 
+  deadline: '',
   status: ProjectStatus.Active,
   allocatedHours: 0,
-  assignedTo: [] as string[]
+  assignedTo: [],
 };
 
 export default function ProjectModal({ open, onClose, project }: Props) {
-  const [form, setForm] = useState(blank);
+  const [form, setForm] = useState<ProjectForm>(blank);
   const { data: employees } = useActiveEmployees();
   const { mutate: create, isPending: creating } = useCreateProject();
   const { mutate: update, isPending: updating }  = useUpdateProject();
@@ -63,15 +76,15 @@ export default function ProjectModal({ open, onClose, project }: Props) {
     }
   }, [project, open]);
 
-  const set = (field: string, value: any) => setForm((f) => {
+  const set = (field: keyof ProjectForm, value: any) =>
+  setForm((f: ProjectForm) => {
     const updated = { ...f, [field]: value };
-    
-    // Auto-calculate deadline
+
     if (field === 'startDate' || field === 'allocatedHours') {
       const start = updated.startDate ? new Date(updated.startDate) : new Date();
       const hours = updated.allocatedHours || 0;
       const daysRequired = Math.ceil(hours / 8);
-      
+
       const calcDeadline = (startDate: Date, days: number): Date => {
         const date = new Date(startDate);
         let added = 0;
@@ -82,9 +95,12 @@ export default function ProjectModal({ open, onClose, project }: Props) {
         return date;
       };
 
-      updated.deadline = format(calcDeadline(start, Math.max(0, daysRequired - 1)), 'yyyy-MM-dd');
+      updated.deadline = format(
+        calcDeadline(start, Math.max(0, daysRequired - 1)),
+        'yyyy-MM-dd'
+      );
     }
-    
+
     return updated;
   });
 
@@ -165,7 +181,7 @@ export default function ProjectModal({ open, onClose, project }: Props) {
                 const val = e.target.value;
                 if (!val) return;
                 const d = new Date(val);
-                setForm(f => ({
+                setForm((f: ProjectForm) => ({
                   ...f,
                   startDate: val,
                   displayStartDate: format(d, 'dd/MM/yyyy')

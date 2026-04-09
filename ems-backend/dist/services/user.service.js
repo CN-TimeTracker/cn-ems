@@ -31,6 +31,7 @@ const toPublic = (user) => ({
     ifscCode: user.ifscCode,
     aadharNo: user.aadharNo,
     panNo: user.panNo,
+    profilePicture: user.profilePicture,
     createdAt: user.createdAt,
 });
 // ─────────────────────────────────────────────
@@ -77,9 +78,13 @@ class UserService {
      * Password changes have their own dedicated flow.
      */
     async updateUser(id, input) {
-        const user = await User_model_1.default.findByIdAndUpdate(id, { $set: input }, { new: true, runValidators: true });
+        const user = await User_model_1.default.findById(id);
         if (!user)
             throw new Error('User not found');
+        // Manually assign fields
+        Object.assign(user, input);
+        // .save() triggers the pre('save') hook for password hashing
+        await user.save();
         return toPublic(user);
     }
     /**
@@ -88,6 +93,14 @@ class UserService {
      */
     async deactivateUser(id) {
         const user = await User_model_1.default.findByIdAndUpdate(id, { isActive: false });
+        if (!user)
+            throw new Error('User not found');
+    }
+    /**
+     * Reactivate user.
+     */
+    async activateUser(id) {
+        const user = await User_model_1.default.findByIdAndUpdate(id, { isActive: true });
         if (!user)
             throw new Error('User not found');
     }

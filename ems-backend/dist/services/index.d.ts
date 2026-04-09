@@ -6,4 +6,5 @@ export { WorkLogService } from './worklog.service';
 export { LeaveService } from './leave.service';
 export { DashboardService } from './dashboard.service';
 export { AttendanceService } from './attendance.service';
+export { PayslipService } from './payslip.service';
 //# sourceMappingURL=index.d.ts.map
