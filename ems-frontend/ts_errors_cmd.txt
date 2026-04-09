@@ -1,0 +1,5 @@
+src/components/dashboard/EmployeeDashboard.tsx(77,33): error TS2339: Property 'title' does not exist on type 'Task'.
+src/components/dashboard/EmployeeDashboard.tsx(95,51): error TS2339: Property 'deadline' does not exist on type 'Task'.
+src/components/dashboard/TaskTimerCard.tsx(143,54): error TS2339: Property 'title' does not exist on type 'Task'.
+src/components/logs/LogForm.tsx(87,71): error TS2339: Property 'title' does not exist on type 'Task'.
+src/hooks/useTasks.ts(73,70): error TS2339: Property 'title' does not exist on type 'Task'.

@@ -1,0 +1,14 @@
+src/seed.ts(87,26): error TS2339: Property 'InProgress' does not exist on type 'typeof TaskStatus'.
+src/seed.ts(97,26): error TS2339: Property 'Done' does not exist on type 'typeof TaskStatus'.
+src/seed.ts(107,26): error TS2339: Property 'ToDo' does not exist on type 'typeof TaskStatus'.
+src/seed.ts(117,26): error TS2339: Property 'InProgress' does not exist on type 'typeof TaskStatus'.
+src/seed.ts(127,26): error TS2339: Property 'InProgress' does not exist on type 'typeof TaskStatus'.
+src/services/dashboard.service.ts(123,33): error TS2339: Property 'Done' does not exist on type 'typeof TaskStatus'.
+src/services/dashboard.service.ts(187,36): error TS2339: Property 'ToDo' does not exist on type 'typeof TaskStatus'.
+src/services/dashboard.service.ts(187,53): error TS2339: Property 'InProgress' does not exist on type 'typeof TaskStatus'.
+src/services/dashboard.service.ts(195,71): error TS2339: Property 'Done' does not exist on type 'typeof TaskStatus'.
+src/services/task.service.ts(67,34): error TS2339: Property 'ToDo' does not exist on type 'typeof TaskStatus'.
+src/services/task.service.ts(67,51): error TS2339: Property 'InProgress' does not exist on type 'typeof TaskStatus'.
+src/services/task.service.ts(112,33): error TS2339: Property 'Done' does not exist on type 'typeof TaskStatus'.
+src/services/task.service.ts(144,30): error TS2339: Property 'InProgress' does not exist on type 'typeof TaskStatus'.
+src/services/task.service.ts(179,30): error TS2339: Property 'Done' does not exist on type 'typeof TaskStatus'.
