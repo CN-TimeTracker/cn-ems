@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { 
-  useAllUsers, 
-  useDeactivateUser, 
-  useActivateUser 
+import {
+  useAllUsers,
+  useDeactivateUser,
+  useActivateUser
 } from '@/hooks';
 import { useAppSelector } from '@/store/hooks';
 import { selectCurrentUser } from '@/store/authSlice';
@@ -20,12 +20,12 @@ import { formatAppDate } from '@/lib/dateUtils';
 import { cn } from '@/lib/utils';
 
 const ROLE_COLORS: Record<UserRole, 'default' | 'info' | 'success' | 'warning' | 'danger'> = {
-  [UserRole.Admin]:    'danger',
-  [UserRole.Dev]:      'info',
+  [UserRole.Admin]: 'danger',
+  [UserRole.Dev]: 'info',
   [UserRole.Designer]: 'warning',
-  [UserRole.SEO]:      'success',
-  [UserRole.QA]:       'default',
-  [UserRole.BA]:       'warning',
+  [UserRole.SEO]: 'success',
+  [UserRole.QA]: 'default',
+  [UserRole.BA]: 'warning',
 };
 
 export default function UsersPage() {
@@ -41,10 +41,10 @@ export default function UsersPage() {
   const { data: users, isLoading } = useAllUsers();
   const { mutate: deactivate, isPending: deactivating } = useDeactivateUser();
   const { mutate: activate, isPending: activating } = useActivateUser();
-  
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
-  
+
   // Confirmation Modal State
   const [confirmModal, setConfirmModal] = useState<{
     open: boolean;
@@ -60,7 +60,7 @@ export default function UsersPage() {
 
   const handleEdit = (user: User) => { setEditing(user); setModalOpen(true); };
   const handleClose = () => { setModalOpen(false); setEditing(null); };
-  
+
   const triggerConfirm = (type: 'activate' | 'deactivate', userId: string, userName: string) => {
     setConfirmModal({ open: true, type, userId, userName });
   };
@@ -75,7 +75,7 @@ export default function UsersPage() {
 
   if (isLoading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
 
-  const active   = users?.filter((u) => u.isActive) ?? [];
+  const active = users?.filter((u) => u.isActive) ?? [];
   const inactive = users?.filter((u) => !u.isActive) ?? [];
 
   return (
@@ -127,10 +127,10 @@ export default function UsersPage() {
                       <button onClick={() => handleEdit(user)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
                         <Pencil className="w-4 h-4" />
                       </button>
-                      
+
                       {user._id !== currentUser?._id && (
                         user.isActive ? (
-                          <button 
+                          <button
                             onClick={() => triggerConfirm('deactivate', user._id, user.name)}
                             title="Deactivate User"
                             className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
@@ -138,7 +138,7 @@ export default function UsersPage() {
                             <UserX className="w-4 h-4" />
                           </button>
                         ) : (
-                          <button 
+                          <button
                             onClick={() => triggerConfirm('activate', user._id, user.name)}
                             title="Activate User"
                             className="p-1.5 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-500 transition-colors"
@@ -160,8 +160,8 @@ export default function UsersPage() {
       <UserModal open={modalOpen} onClose={handleClose} user={editing} />
 
       {/* Confirmation Modal */}
-      <Modal 
-        open={confirmModal.open} 
+      <Modal
+        open={confirmModal.open}
         onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))}
         title={confirmModal.type === 'activate' ? 'Reactivate Team Member' : 'Deactivate Team Member'}
         size="sm"
@@ -173,23 +173,23 @@ export default function UsersPage() {
           )}>
             {confirmModal.type === 'activate' ? <UserCheck className="w-8 h-8" /> : <AlertTriangle className="w-8 h-8" />}
           </div>
-          
+
           <h4 className="text-xl font-bold text-gray-900 mb-2">Are you sure?</h4>
           <p className="text-sm text-gray-500 mb-8 leading-relaxed">
-            {confirmModal.type === 'activate' 
+            {confirmModal.type === 'activate'
               ? `You are about to reactivate ${confirmModal.userName}. They will regain access to the platform immediately.`
               : `You are about to deactivate ${confirmModal.userName}. They will lose all access to the platform immediately.`
             }
           </p>
 
           <div className="flex gap-3">
-            <button 
+            <button
               onClick={() => setConfirmModal(prev => ({ ...prev, open: false }))}
               className="btn-secondary flex-1"
             >
               Cancel
             </button>
-            <button 
+            <button
               onClick={handleConfirmAction}
               disabled={deactivating || activating}
               className={cn(
@@ -197,7 +197,7 @@ export default function UsersPage() {
                 confirmModal.type === 'activate' ? "bg-green-600 hover:bg-green-700 shadow-green-100" : "bg-red-600 hover:bg-red-700 shadow-red-100"
               )}
             >
-              {deactivating || activating ? <Spinner size="sm"  /> : (confirmModal.type === 'activate' ? 'Activate Now' : 'Deactivate Now')}
+              {deactivating || activating ? <Spinner size="sm" /> : (confirmModal.type === 'activate' ? 'Activate Now' : 'Deactivate Now')}
             </button>
           </div>
         </div>

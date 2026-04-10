@@ -166,6 +166,9 @@ export default function UserModal({ open, onClose, user }: Props) {
     if (payload.salary) payload.salary = Number(payload.salary);
     else delete payload.salary;
 
+    delete payload.displayDateOfBirth;
+    delete payload.displayDateOfJoining;
+
     Object.keys(payload).forEach((k) => {
       if (payload[k] === '') delete payload[k];
     });
@@ -196,25 +199,103 @@ export default function UserModal({ open, onClose, user }: Props) {
         </div>
 
         {/* CONTENT */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-6">
 
           {activeTab === 'basic' && (
-            <>
-              <Input label="Name" value={form.name} onChange={(e) => set('name', e.target.value)} />
-              <Input label="Email" value={form.email} onChange={(e) => set('email', e.target.value)} />
-            </>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input label="Name" value={form.name} onChange={(e) => set('name', e.target.value)} required />
+              <Input label="Email" type="email" value={form.email} onChange={(e) => set('email', e.target.value)} required />
+              <Input label="Employee Code" value={form.employeeCode} onChange={(e) => set('employeeCode', e.target.value)} />
+              <Input label="Username" value={form.username} onChange={(e) => set('username', e.target.value)} />
+              <Select label="Role" value={form.role} onChange={(e) => set('role', e.target.value as UserRole)} options={ROLE_OPTIONS} required />
+              <Input 
+                label={isEditing ? "New Password (optional)" : "Password"} 
+                type="password" 
+                value={form.password} 
+                onChange={(e) => set('password', e.target.value)} 
+                required={!isEditing} 
+              />
+              
+              <div className="relative">
+                <Input 
+                  label="Date of Joining" 
+                  value={form.displayDateOfJoining} 
+                  placeholder="DD/MM/YYYY"
+                  onChange={(e) => {
+                    set('displayDateOfJoining', e.target.value);
+                    const parsed = parseAppDate(e.target.value);
+                    if (parsed) set('dateOfJoining', parsed.toISOString().split('T')[0]);
+                  }}
+                />
+                <CalendarIcon 
+                  className="absolute right-3 top-[38px] text-gray-400 cursor-pointer w-5 h-5 pointer-events-auto" 
+                  onClick={() => joiningPickerRef.current?.showPicker()}
+                />
+                <input 
+                  type="date" 
+                  ref={joiningPickerRef}
+                  className="absolute bottom-0 right-0 w-0 h-0 opacity-0 -z-10"
+                  value={form.dateOfJoining}
+                  onChange={(e) => {
+                    set('dateOfJoining', e.target.value);
+                    if (e.target.value) set('displayDateOfJoining', formatAppDate(e.target.value));
+                  }}
+                />
+              </div>
+            </div>
           )}
 
           {activeTab === 'personal' && (
-            <>
-              <Input label="Phone" value={form.phoneNumber} onChange={(e) => set('phoneNumber', e.target.value)} />
-            </>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input label="Phone Number" type="tel" value={form.phoneNumber} onChange={(e) => set('phoneNumber', e.target.value)} />
+                
+                <div className="relative">
+                  <Input 
+                    label="Date of Birth" 
+                    value={form.displayDateOfBirth} 
+                    placeholder="DD/MM/YYYY"
+                    onChange={(e) => {
+                      set('displayDateOfBirth', e.target.value);
+                      const parsed = parseAppDate(e.target.value);
+                      if (parsed) set('dateOfBirth', parsed.toISOString().split('T')[0]);
+                    }}
+                  />
+                  <CalendarIcon 
+                    className="absolute right-3 top-[38px] text-gray-400 cursor-pointer w-5 h-5 pointer-events-auto" 
+                    onClick={() => birthPickerRef.current?.showPicker()}
+                  />
+                  <input 
+                    type="date" 
+                    ref={birthPickerRef}
+                    className="absolute bottom-0 right-0 w-0 h-0 opacity-0 -z-10"
+                    value={form.dateOfBirth}
+                    onChange={(e) => {
+                      set('dateOfBirth', e.target.value);
+                      if (e.target.value) set('displayDateOfBirth', formatAppDate(e.target.value));
+                    }}
+                  />
+                </div>
+
+                <Select label="Gender" value={form.gender} onChange={(e) => set('gender', e.target.value)} options={GENDER_OPTIONS} />
+                <Input label="Father's Name" value={form.fatherName} onChange={(e) => set('fatherName', e.target.value)} />
+              </div>
+              <Input label="Current Address" value={form.currentAddress} onChange={(e) => set('currentAddress', e.target.value)} />
+              <Input label="Permanent Address" value={form.permanentAddress} onChange={(e) => set('permanentAddress', e.target.value)} />
+              <Input label="Description (Bio)" value={form.description} onChange={(e) => set('description', e.target.value)} />
+            </div>
           )}
 
           {activeTab === 'account' && (
-            <>
-              <Input label="Salary" value={form.salary} onChange={(e) => set('salary', e.target.value)} />
-            </>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input label="Salary" type="number" value={form.salary} onChange={(e) => set('salary', e.target.value)} />
+              <Input label="Bank Name" value={form.bankName} onChange={(e) => set('bankName', e.target.value)} />
+              <Input label="Account No." value={form.accountNo} onChange={(e) => set('accountNo', e.target.value)} />
+              <Input label="Branch Name" value={form.branchName} onChange={(e) => set('branchName', e.target.value)} />
+              <Input label="IFSC Code" value={form.ifscCode} onChange={(e) => set('ifscCode', e.target.value)} />
+              <Input label="Aadhar No." value={form.aadharNo} onChange={(e) => set('aadharNo', e.target.value)} />
+              <Input label="PAN No." value={form.panNo} onChange={(e) => set('panNo', e.target.value)} />
+            </div>
           )}
 
         </div>
