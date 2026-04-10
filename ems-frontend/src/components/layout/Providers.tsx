@@ -33,9 +33,9 @@ export default function Providers({ children }: { children: ReactNode }) {
           {children}
 
           {/* TanStack Query devtools — only in development */}
-          {process.env.NODE_ENV === 'development' && (
+          {/* {process.env.NODE_ENV === 'development' && (
             <ReactQueryDevtools initialIsOpen={false} position="bottom" />
-          )}
+          )} */}
         </QueryClientProvider>
       </PersistGate>
     </ReduxProvider>
