@@ -15,6 +15,7 @@ import {
   ProjectStatus,
 } from '../interfaces';
 import { getISTMidnight } from '../utils/dateUtils';
+import { AttendanceService } from './attendance.service';
 
 // ─────────────────────────────────────────────
 // HELPER
@@ -86,30 +87,28 @@ export class DashboardService {
       })
       .map(toPublic);
 
-    // ── 4. Users who logged but less than 4 hours ─────────────────────────
-    const hoursByUser = await WorkLog.aggregate([
-      { $match: { date: { $gte: today, $lt: tomorrow } } },
-      { $group: { _id: '$userId', totalHours: { $sum: '$hours' } } },
-    ]);
-
+    // ── 4. & 5. Users who logged but less than 4 hours & Total Hours ───────
+    const attendanceService = new AttendanceService();
+    let totalHoursToday = 0;
     const usersUnder4Hours: IAdminDashboardData['usersUnder4Hours'] = [];
-    for (const entry of hoursByUser) {
-      if (entry.totalHours < 4) {
-        const u = allUsers.find(
-          (user) => user._id.toString() === entry._id.toString()
-        );
-        if (u) {
-          usersUnder4Hours.push({ user: toPublic(u), totalHours: entry.totalHours });
-        }
+
+    for (const record of todayRecords) {
+      // Exclude Admin from under 4 hours stats typically? Wait, previously allUsers excluded Admin.
+      // Yes, in point 3 admin is excluded, but allUsers already fetched active users. I will just check allUsers.
+      const u = allUsers.find(user => user._id.toString() === record.userId.toString() && user.role !== UserRole.Admin);
+      if (!u) continue;
+      
+      const liveMs = attendanceService.calculateLiveWorkMs(record);
+      // Let's not fix(2) strictly to lose precision here for addition, just standard sum.
+      // E.g., if we want to display properly, UI rounds it anyway.
+      const totalHours = liveMs / (1000 * 60 * 60);
+      
+      totalHoursToday += totalHours;
+      
+      if (totalHours < 4) {
+        usersUnder4Hours.push({ user: toPublic(u), totalHours: Number(totalHours.toFixed(2)) });
       }
     }
-
-    // ── 5. Total hours logged today (all users combined) ──────────────────
-    const totalHoursTodayAgg = await WorkLog.aggregate([
-      { $match: { date: { $gte: today, $lt: tomorrow } } },
-      { $group: { _id: null, total: { $sum: '$hours' } } },
-    ]);
-    const totalHoursToday = totalHoursTodayAgg[0]?.total ?? 0;
 
 
     // ── 7. Users with NO assigned tasks ────────────────────────────────────
@@ -167,7 +166,6 @@ export class DashboardService {
 
     const [
       todaysTasks,
-      todaysLogsAgg,
       pendingTasks,
       recentLogs,
       todayAttendance,
@@ -179,11 +177,6 @@ export class DashboardService {
         assignedTo: userObjectId,
         status: { $ne: TaskStatus.ProjectCompleted },
       }).populate('projectId', 'name clientName').sort({ deadline: 1 }).limit(10),
-
-      WorkLog.aggregate([
-        { $match: { userId: userObjectId, date: { $gte: today, $lt: tomorrow } } },
-        { $group: { _id: null, total: { $sum: '$hours' } } },
-      ]),
 
       Task.find({ assignedTo: userObjectId, status: { $ne: TaskStatus.ProjectCompleted } })
         .populate('projectId', 'name').sort({ deadline: 1 }),
@@ -217,9 +210,12 @@ export class DashboardService {
       deadline: pw.p.deadline
     }));
 
+    const attendanceService = new AttendanceService();
+    const todaysLoggedHours = todayAttendance ? attendanceService.calculateLiveWorkMs(todayAttendance) / (1000 * 60 * 60) : 0;
+
     return {
       todaysTasks: todaysTasks as any,
-      todaysLoggedHours: todaysLogsAgg[0]?.total ?? 0,
+      todaysLoggedHours: Number(todaysLoggedHours.toFixed(2)),
       pendingTasks: pendingTasks as any,
       recentLogs: recentLogs as any,
       todayAttendance: todayAttendance as any,

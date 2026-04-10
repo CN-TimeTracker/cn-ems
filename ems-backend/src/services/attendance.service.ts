@@ -25,7 +25,7 @@ export class AttendanceService {
   }
 
   /** Calculate total break milliseconds from a breaks array */
-  private calcTotalBreakMs(breaks: IBreakEntry[]): number {
+  public calcTotalBreakMs(breaks: IBreakEntry[]): number {
     let total = 0;
     for (const b of breaks) {
       const start = new Date(b.startTime).getTime();
@@ -39,6 +39,22 @@ export class AttendanceService {
   public calculateWorkDuration(punchIn: Date, punchOut: Date, breaks: IBreakEntry[]): number {
     const totalMs = new Date(punchOut).getTime() - new Date(punchIn).getTime();
     const breakMs = this.calcTotalBreakMs(breaks);
+    return Math.max(0, totalMs - breakMs);
+  }
+
+  /** Dynamically calculate work duration up to the current moment if not punched out */
+  public calculateLiveWorkMs(record: any): number {
+    if (!record.punchInTime) return 0;
+    
+    // If user has already punched out, use final tally
+    if (record.punchOutTime) {
+      if (record.totalWorkMs) return record.totalWorkMs;
+      return this.calculateWorkDuration(record.punchInTime, record.punchOutTime, record.breaks || []);
+    }
+
+    // Ongoing shift: calculate difference until now
+    const totalMs = Date.now() - new Date(record.punchInTime).getTime();
+    const breakMs = this.calcTotalBreakMs(record.breaks || []);
     return Math.max(0, totalMs - breakMs);
   }
 

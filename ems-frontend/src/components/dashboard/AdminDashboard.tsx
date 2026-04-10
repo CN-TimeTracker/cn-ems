@@ -150,7 +150,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-amber-600">{totalHours}h</p>
+                    <p className="text-sm font-semibold text-amber-600">{formatDuration(totalHours)}</p>
                     <p className="text-[10px] text-gray-400">Logged today</p>
                   </div>
                 </div>
@@ -209,7 +209,7 @@ export default function AdminDashboard() {
                 <div key={project.project}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-gray-700">{project.project}</span>
-                    <span className="text-sm font-bold text-brand-700">{project.totalHours}h</span>
+                    <span className="text-sm font-bold text-brand-700">{formatDuration(project.totalHours)}</span>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                     <div 
@@ -257,7 +257,7 @@ export default function AdminDashboard() {
                     <tr key={i} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-6 py-4 font-medium text-gray-900">{row.projectName}</td>
                       <td className="px-6 py-4 text-gray-600">{row.userName}</td>
-                      <td className="px-6 py-4 text-right font-bold text-brand-600">{row.totalHours}h</td>
+                      <td className="px-6 py-4 text-right font-bold text-brand-600">{formatDuration(row.totalHours)}</td>
                     </tr>
                   ))
                 ) : (

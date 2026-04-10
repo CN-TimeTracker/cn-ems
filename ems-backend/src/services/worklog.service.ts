@@ -1,6 +1,8 @@
 import WorkLog from '../models/WorkLog.model';
 import Task from '../models/Task.model';
 import Leave from '../models/Leave.model';
+import Attendance from '../models/Attendance.model';
+import { AttendanceService } from './attendance.service';
 import {
   IWorkLog,
   ICreateWorkLogInput,
@@ -141,20 +143,19 @@ export class WorkLogService {
    */
   async getTodayHoursForUser(userId: string, date?: Date): Promise<number> {
     const logDate = toMidnightUTC(date ?? new Date());
-    const nextDay = new Date(logDate);
-    nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+    const attendanceRecord = await Attendance.findOne({ userId, date: logDate }).lean();
 
-    const result = await WorkLog.aggregate([
-      {
-        $match: {
-          userId: (await import('mongoose')).default.Types.ObjectId.createFromHexString(userId),
-          date: { $gte: logDate, $lt: nextDay },
-        },
-      },
-      { $group: { _id: null, total: { $sum: '$hours' } } },
-    ]);
+    if (!attendanceRecord) return 0;
 
-    return result[0]?.total ?? 0;
+    const attendanceService = new AttendanceService();
+    // If it's assessing today dynamically
+    if (!date || logDate.getTime() === toMidnightUTC(new Date()).getTime()) {
+      const liveMs = attendanceService.calculateLiveWorkMs(attendanceRecord);
+      return Number((liveMs / (1000 * 60 * 60)).toFixed(2));
+    }
+
+    // For retrospective dates
+    return Number(((attendanceRecord.totalWorkMs || 0) / (1000 * 60 * 60)).toFixed(2));
   }
 
   /**
