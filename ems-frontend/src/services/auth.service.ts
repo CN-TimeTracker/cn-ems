@@ -36,6 +36,14 @@ const AuthService = {
   logout: async (): Promise<void> => {
     await api.post('/auth/logout');
   },
+
+  /**
+   * PATCH /auth/password
+   * Change current user's password
+   */
+  changePassword: async (passwords: { currentPassword: string; newPassword: string }): Promise<void> => {
+    await api.patch('/auth/password', passwords);
+  },
 };
 
 export default AuthService;

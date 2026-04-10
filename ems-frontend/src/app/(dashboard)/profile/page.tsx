@@ -12,6 +12,7 @@ import { useDispatch } from 'react-redux';
 import { updateCurrentUser } from '@/store/authSlice';
 import { formatAppDate, parseAppDate } from '@/lib/dateUtils';
 import { addToast } from '@/store/uiSlice';
+import AuthService from '@/services/auth.service';
 import { format } from 'date-fns';
 
 export default function ProfilePage() {
@@ -32,6 +33,8 @@ export default function ProfilePage() {
 
   // State
   const [formData, setFormData] = useState<ProfileUpdateChanges>({});
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
   // Mutations
   const uploadPicMut = useMutation({
@@ -78,6 +81,16 @@ export default function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: ['profile', 'pending-request'] });
       setIsEditing(false);
       dispatch(addToast({ type: 'success', message: 'Profile update requested! Pending admin approval.' }));
+    },
+    onError: (err: Error) => dispatch(addToast({ type: 'error', message: err.message })),
+  });
+
+  const passwordMut = useMutation({
+    mutationFn: AuthService.changePassword,
+    onSuccess: () => {
+      setCurrentPassword('');
+      setNewPassword('');
+      dispatch(addToast({ type: 'success', message: 'Password updated successfully!' }));
     },
     onError: (err: Error) => dispatch(addToast({ type: 'error', message: err.message })),
   });
@@ -239,7 +252,7 @@ export default function ProfilePage() {
               <input type="text" value={formData.name} onChange={e => handleChange('name', e.target.value)} className="w-full text-sm p-2 border border-brand-200 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" />
             ) : <p className="font-medium text-gray-900">{currentUser.name}</p>}
           </div>
-
+            
           <div className="space-y-1">
             <label className="text-xs font-semibold text-gray-500 uppercase">User Name</label>
             {isEditing ? (
@@ -394,6 +407,34 @@ export default function ProfilePage() {
             <p className="font-mono text-gray-900 tracking-widest uppercase">{currentUser.panNo || '—'}</p>
           </div>
 
+        </div>
+      </div>
+
+      {/* SECURITY DETAILS */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-8">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+          <h2 className="font-semibold text-gray-900">Security</h2>
+        </div>
+        <div className="p-6">
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              passwordMut.mutate({ currentPassword, newPassword });
+            }}
+            className="flex flex-col md:flex-row items-end gap-4 max-w-2xl"
+          >
+            <div className="space-y-1 w-full">
+              <label className="text-xs font-semibold text-gray-500 uppercase">Current Password</label>
+              <input type="password" required value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full text-sm p-2 border border-brand-200 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+            <div className="space-y-1 w-full">
+              <label className="text-xs font-semibold text-gray-500 uppercase">New Password</label>
+              <input type="password" required value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full text-sm p-2 border border-brand-200 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+            <button type="submit" disabled={passwordMut.isPending} className="px-5 py-2.5 bg-brand-600 font-bold text-white rounded-xl shadow-lg hover:bg-brand-700 transition-all shrink-0 w-full md:w-auto h-[38px] flex items-center justify-center">
+              {passwordMut.isPending ? 'Updating...' : 'Update Password'}
+            </button>
+          </form>
         </div>
       </div>
 

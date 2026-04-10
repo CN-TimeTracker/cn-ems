@@ -84,3 +84,23 @@ export const logout = asyncHandler(async (req: IAuthRequest, res: Response) => {
     message: 'Logged out successfully',
   });
 });
+
+// ─────────────────────────────────────────────
+// PATCH /api/v1/auth/password  [protected]
+// ─────────────────────────────────────────────
+
+export const updatePassword = asyncHandler(async (req: IAuthRequest, res: Response) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    res.status(400);
+    throw new Error('Please provide both current and new password');
+  }
+
+  await authService.updatePassword(req.user!.id, currentPassword, newPassword);
+
+  res.status(200).json({
+    success: true,
+    message: 'Password updated successfully',
+  });
+});

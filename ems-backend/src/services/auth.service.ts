@@ -97,4 +97,20 @@ export class AuthService {
     if (!user) throw new Error('User not found');
     return toPublic(user);
   }
+
+  /**
+   * Updates the password of the currently authenticated user.
+   */
+  async updatePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await User.findById(userId).select('+password');
+    if (!user) throw new AppError('User not found', 404);
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      throw new AppError('Incorrect current password', 401);
+    }
+
+    user.password = newPassword;
+    await user.save();
+  }
 }

@@ -1,9 +1,14 @@
 'use client';
 
+import { useState } from 'react';
+
 import { 
   useAdminDashboard, 
   useAdminProjectBreakdown,
-  useAllLogs
+  useAllLogs,
+  useAllUsers,
+  useAllProjects,
+  useTasks
 } from '@/hooks';
 import StatsCard from './StatsCard';
 import AttendanceSummaryCard from './AttendanceSummaryCard';
@@ -17,7 +22,8 @@ import {
   BarChart3,
   UserX,
   Target,
-  History
+  History,
+  Filter
 } from 'lucide-react';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
@@ -33,12 +39,21 @@ interface IProjectBreakdown {
 export default function AdminDashboard() {
   const todayStr = new Date().toISOString().split('T')[0];
   
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterEmployeeId, setFilterEmployeeId] = useState('');
+  const [filterProjectId, setFilterProjectId] = useState('');
+  const [filterTaskId, setFilterTaskId] = useState('');
+
   const { data, isLoading, error } = useAdminDashboard();
   const { data: breakdown, isLoading: breakdownLoading } = useAdminProjectBreakdown() as { data: IProjectBreakdown[], isLoading: boolean };
   const { data: allLogs, isLoading: logsLoading } = useAllLogs({
     startDate: todayStr,
     endDate: todayStr,
   });
+
+  const { data: allUsers } = useAllUsers();
+  const { data: allProjects } = useAllProjects();
+  const { data: allTasks } = useTasks();
 
   if (isLoading) return (
     <div className="flex items-center justify-center min-h-[400px]">
@@ -58,6 +73,22 @@ export default function AdminDashboard() {
     if (!dateStr) return '--:--';
     return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+
+  const formatDuration = (hours: number | undefined) => {
+    if (!hours) return '0h';
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+  };
+
+  const filteredLogs = (allLogs as WorkLog[])?.filter(log => {
+    const empMatch = !filterEmployeeId || log.userId?._id === filterEmployeeId;
+    const projMatch = !filterProjectId || log.projectId?._id === filterProjectId;
+    const taskMatch = !filterTaskId || log.taskId?._id === filterTaskId;
+    return empMatch && projMatch && taskMatch;
+  }) || [];
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
@@ -249,8 +280,54 @@ export default function AdminDashboard() {
             <History className="w-4 h-4 text-emerald-600" />
             Detailed Activity Log (Today)
           </h3>
-          <Badge variant="info">{(allLogs as WorkLog[])?.length || 0} Sessions</Badge>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm transition-all active:scale-95 border ${showFilters ? 'bg-brand-50 text-brand-700 border-brand-200' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'}`}
+            >
+              <Filter className="w-3.5 h-3.5" />
+              Filter
+            </button>
+            <Badge variant="info">{filteredLogs.length} Sessions</Badge>
+          </div>
         </div>
+        
+        {/* Filters Row */}
+        {showFilters && (
+          <div className="px-6 py-3 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row gap-4 text-sm animate-in slide-in-from-top-2">
+            <select 
+              value={filterEmployeeId}
+              onChange={(e) => setFilterEmployeeId(e.target.value)}
+              className="flex-1 px-3 py-1.5 rounded-lg border border-brand-200 outline-none focus:ring-2 focus:ring-brand-500 bg-white" 
+            >
+              <option value="">All Employees</option>
+              {allUsers?.map((emp: any) => (
+                <option key={emp._id} value={emp._id}>{emp.name}</option>
+              ))}
+            </select>
+            <select 
+              value={filterProjectId}
+              onChange={(e) => setFilterProjectId(e.target.value)}
+              className="flex-1 px-3 py-1.5 rounded-lg border border-brand-200 outline-none focus:ring-2 focus:ring-brand-500 bg-white" 
+            >
+              <option value="">All Projects</option>
+              {allProjects?.map((proj: any) => (
+                <option key={proj._id} value={proj._id}>{proj.name}</option>
+              ))}
+            </select>
+            <select 
+              value={filterTaskId}
+              onChange={(e) => setFilterTaskId(e.target.value)}
+              className="flex-1 px-3 py-1.5 rounded-lg border border-brand-200 outline-none focus:ring-2 focus:ring-brand-500 bg-white" 
+            >
+              <option value="">All Tasks</option>
+              {allTasks?.map((task: any) => (
+                <option key={task._id} value={task._id}>{task.workType}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
             <thead>
@@ -275,21 +352,23 @@ export default function AdminDashboard() {
                     <td className="px-6 py-4 text-right"><div className="h-4 bg-gray-100 rounded w-10 ml-auto"></div></td>
                   </tr>
                 ))
-              ) : (allLogs as WorkLog[])?.length > 0 ? (
-                (allLogs as WorkLog[]).map((log: WorkLog) => (
+              ) : filteredLogs.length > 0 ? (
+                filteredLogs.map((log: WorkLog) => (
                   <tr key={log._id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4 font-medium text-gray-900">{log.userId?.name}</td>
                     <td className="px-6 py-4">{log.projectId?.name}</td>
-                    <td className="px-6 py-4 italic truncate max-w-xs">{log.notes || '—'}</td>
+                    <td className="px-6 py-4 italic truncate max-w-xs">{log.taskId?.workType || log.notes || '—'}</td>
                     <td className="px-6 py-4 text-center tabular-nums">{formatTime(log.startTime)}</td>
                     <td className="px-6 py-4 text-center tabular-nums">{formatTime(log.endTime)}</td>
-                    <td className="px-6 py-4 text-right font-bold text-emerald-600">{log.hours}h</td>
+                    <td className="px-6 py-4 text-right font-bold text-emerald-600">{formatDuration(log.hours)}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-gray-400 italic">
-                    No detailed task activity recorded for today.
+                    {allLogs && (allLogs as WorkLog[]).length > 0 
+                      ? "No activity matches your filters." 
+                      : "No detailed task activity recorded for today."}
                   </td>
                 </tr>
               )}

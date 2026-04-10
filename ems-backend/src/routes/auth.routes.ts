@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { login, getMe, logout } from '../controllers/auth.controller';
+import { login, getMe, logout, updatePassword } from '../controllers/auth.controller';
 import { protect } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate.middleware';
 import { loginSchema } from '../middleware/schemas';
@@ -14,5 +14,8 @@ router.get('/me', protect, getMe);
 
 // POST   /api/v1/auth/logout
 router.post('/logout', protect, logout);
+
+// PATCH  /api/v1/auth/password
+router.patch('/password', protect, updatePassword);
 
 export default router;
