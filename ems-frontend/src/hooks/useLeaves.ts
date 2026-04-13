@@ -25,11 +25,12 @@ export const useLeaves = (filters?: { userId?: string }) => {
 // Approval queue — auto-refreshes every 3 minutes
 // ─────────────────────────────────────────────
 
-export const usePendingLeaves = () => {
+export const usePendingLeaves = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: queryKeys.leaves.pending(),
     queryFn:  () => LeaveService.getPendingLeaves(),
     refetchInterval: 1000 * 60 * 3,
+    enabled: options?.enabled ?? true,
   });
 };
 

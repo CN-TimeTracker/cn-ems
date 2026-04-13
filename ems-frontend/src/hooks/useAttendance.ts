@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as attendanceService from '@/services/attendance.service';
 import { useDispatch } from 'react-redux';
 import { addToast } from '@/store/uiSlice';
@@ -34,5 +34,12 @@ export const usePunchIn = () => {
       queryClient.invalidateQueries({ queryKey: ['employeeDashboard'] });
       queryClient.invalidateQueries({ queryKey: ['adminDashboard'] });
     },
+  });
+};
+
+export const useAllAttendance = (filters: any) => {
+  return useQuery({
+    queryKey: ['attendance', 'admin', 'all', filters],
+    queryFn: () => attendanceService.getAdminAllAttendanceHistory(filters),
   });
 };

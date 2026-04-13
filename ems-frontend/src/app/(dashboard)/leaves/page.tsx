@@ -21,7 +21,7 @@ export default function LeavesPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   const { data: leaves, isLoading } = useLeaves();
-  const { data: pendingLeaves } = usePendingLeaves();
+  const { data: pendingLeaves } = usePendingLeaves({ enabled: isAdmin });
   const { data: holidays, isLoading: isHolidaysLoading } = useHolidays();
   
   const currentMonthLeaves = useMemo(() => {
@@ -78,7 +78,11 @@ export default function LeavesPage() {
         <div className="w-full h-full min-h-[500px]">
           {isLoading || isHolidaysLoading
             ? <div className="h-[400px] flex items-center justify-center bg-gray-50 rounded-3xl border border-dashed border-gray-200"><Spinner size="lg" /></div>
-            : <Calendar leaves={leaves ?? []} holidays={holidays ?? []} onDateClick={handleDateClick} />
+            : <Calendar 
+                leaves={(leaves ?? []).filter(l => !isAdmin || l.userId._id === user?._id)} 
+                holidays={holidays ?? []} 
+                onDateClick={handleDateClick} 
+              />
           }
         </div>
 
@@ -86,7 +90,7 @@ export default function LeavesPage() {
         <div className="w-full flex flex-col gap-8 overflow-hidden lg:col-span-2">
         
           {/* Apply leave form */}
-          {showForm && <LeaveForm onClose={handleCloseForm} initialDate={selectedDate} />}
+          {showForm && <LeaveForm onClose={handleCloseForm} initialDate={selectedDate} holidays={holidays ?? []} />}
 
           {/* Holiday Manager for Admins */}
           {isAdmin && <HolidayManager />}

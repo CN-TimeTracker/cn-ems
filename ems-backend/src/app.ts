@@ -23,6 +23,7 @@ import payslipRoutes    from './routes/payslip.routes';
 import eventRoutes      from './routes/event.routes';
 import holidayRoutes    from './routes/holiday.routes';
 import { CronService }  from './services/cron.service';
+import { TimeService }  from './services/time.service';
 
 // ─────────────────────────────────────────────
 // BOOTSTRAP
@@ -30,6 +31,7 @@ import { CronService }  from './services/cron.service';
 
 dotenv.config();
 connectDB();
+TimeService.init();
 CronService.init();
 
 const app = express();
@@ -58,7 +60,7 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use('/api', limiter);
+// app.use('/api', limiter);
 
 // Stricter limiter on auth endpoints
 const authLimiter = rateLimit({
@@ -66,7 +68,7 @@ const authLimiter = rateLimit({
   max: 10,
   message: { success: false, message: 'Too many login attempts. Please try again later.' },
 });
-app.use('/api/v1/auth/login', authLimiter);
+// app.use('/api/v1/auth/login', authLimiter);
 
 // ─────────────────────────────────────────────
 // GENERAL MIDDLEWARE

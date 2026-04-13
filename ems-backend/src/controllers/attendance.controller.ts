@@ -121,3 +121,25 @@ export const getAdminTodayView = asyncHandler(async (_req: IAuthRequest, res: Re
     data,
   });
 });
+
+// ─────────────────────────────────────────────
+// GET /api/v1/attendance/admin/all  [Admin]
+// All attendance history with optional filters
+// ─────────────────────────────────────────────
+
+export const getAdminAllAttendanceHistory = asyncHandler(async (req: IAuthRequest, res: Response) => {
+  const { userId, startDate, endDate } = req.query;
+
+  const filters = {
+    userId: userId as string | undefined,
+    startDate: startDate as string | undefined,
+    endDate: endDate as string | undefined,
+  };
+
+  const data = await attendanceService.getAdminAllAttendanceHistory(filters);
+  res.status(200).json({
+    success: true,
+    count:   data.length,
+    data,
+  });
+});

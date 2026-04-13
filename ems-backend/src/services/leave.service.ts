@@ -1,15 +1,37 @@
 import Leave from '../models/Leave.model';
 import WorkLog from '../models/WorkLog.model';
+import Holiday from '../models/Holiday.model';
 import {
   ILeave,
   ICreateLeaveInput,
   IReviewLeaveInput,
   LeaveStatus,
+  LeaveType,
+  LeaveDuration
 } from '../interfaces';
+import { TimeService } from './time.service';
 
 // ─────────────────────────────────────────────
 // HELPER
 // ─────────────────────────────────────────────
+
+/**
+ * Normalizes a date to YYYY-MM-DD string for comparison
+ */
+const toDateString = (date: Date): string => {
+  return date.toISOString().split('T')[0];
+};
+
+/**
+ * Parses a date safely. Handles ISO strings or standard date strings.
+ */
+const parseSafe = (val: any): Date => {
+  const d = new Date(val);
+  if (isNaN(d.getTime())) {
+    throw new Error(`Invalid date provided: ${val}`);
+  }
+  return d;
+};
 
 const toMidnight = (date: Date): Date => {
   const d = new Date(date);
@@ -25,18 +47,43 @@ export class LeaveService {
   /**
    * Employee applies for leave.
    * Validates no overlapping pending/approved leave exists for the same period.
+   * Blocks public holidays and enforces 5-day advance notice for Casual leave.
    */
   async applyLeave(userId: string, input: ICreateLeaveInput): Promise<ILeave> {
-    const { LeaveType, LeaveDuration, LeaveStatus } = await import('../interfaces');
-    const start = toMidnight(new Date(input.startDate));
-    const end   = toMidnight(new Date(input.endDate));
+    const start = toMidnight(parseSafe(input.startDate));
+    const end   = toMidnight(parseSafe(input.endDate));
 
     if (end < start) {
       throw new Error('End date cannot be before start date');
     }
 
-    // Monthly Casual Leave restriction: Max 1 day per month
-    if (input.leaveType === LeaveType.Casual) {
+    // 1. Public Holiday Check
+    const overlappingHolidays = await Holiday.find({
+      date: { $gte: start, $lte: end }
+    });
+
+    if (overlappingHolidays.length > 0) {
+      const holidayNames = overlappingHolidays.map(h => h.name).join(', ');
+      throw new Error(`Your leave request includes public holiday(s): ${holidayNames}. Please adjust your dates.`);
+    }
+
+    // 2. Advance notice check for Casual Leave (5 Days)
+    // POLICY: Casual leave must be applied at least 5 days in advance.
+    if (String(input.leaveType).trim() === LeaveType.Casual) {
+      const today = TimeService.now();
+      const minDate = new Date(today);
+      minDate.setDate(today.getDate() + 5);
+
+      const startStr = toDateString(start);
+      const minStr = toDateString(minDate);
+
+      if (startStr < minStr) {
+        throw new Error('Casual leave requires at least 5 days of advance notice');
+      }
+    }
+
+    // 3. Monthly Casual Leave restriction: Max 1 day per month
+    if (String(input.leaveType).trim() === LeaveType.Casual) {
       const monthStart = new Date(start.getFullYear(), start.getMonth(), 1);
       const monthEnd = new Date(start.getFullYear(), start.getMonth() + 1, 0);
 
@@ -66,7 +113,7 @@ export class LeaveService {
       }
     }
 
-    // Block overlapping approved/pending leave
+    // 4. Block overlapping approved/pending leave
     const overlap = await Leave.findOne({
       userId,
       status: { $in: [LeaveStatus.Pending, LeaveStatus.Approved] },

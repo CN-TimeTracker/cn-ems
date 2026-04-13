@@ -58,3 +58,34 @@ export const deleteHoliday = asyncHandler(async (req: Request, res: Response) =>
     message: 'Holiday removed successfully',
   });
 });
+
+/**
+ * PATCH /api/v1/holidays/:id
+ * Update a public holiday [Admin Only]
+ */
+export const updateHoliday = asyncHandler(async (req: Request, res: Response) => {
+  const { date, name } = req.body;
+
+  const holiday = await Holiday.findById(req.params.id);
+  if (!holiday) {
+    throw new Error('Holiday not found');
+  }
+
+  if (date) {
+    const holidayDate = new Date(date);
+    holidayDate.setUTCHours(0, 0, 0, 0);
+    holiday.date = holidayDate;
+  }
+  
+  if (name) {
+    holiday.name = name;
+  }
+
+  await holiday.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Holiday updated successfully',
+    data: holiday,
+  });
+});

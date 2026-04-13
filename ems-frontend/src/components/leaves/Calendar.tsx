@@ -14,9 +14,10 @@ import {
   addDays,
   eachDayOfInterval,
   isWithinInterval,
-  parseISO
+  parseISO,
+  startOfDay
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CheckCircle2, AlertCircle, Clock, XCircle } from 'lucide-react';
 import { Leave, LeaveStatus } from '@/types';
 import { Holiday } from '@/types/holiday';
 import { clsx, type ClassValue } from 'clsx';
@@ -51,10 +52,12 @@ export default function Calendar({ leaves, holidays, onDateClick }: Props) {
   });
 
   const getDayLeaves = (day: Date) => {
+    const d = startOfDay(day);
     return leaves.filter(leave => {
-      const start = parseISO(leave.startDate);
-      const end = parseISO(leave.endDate);
-      return isWithinInterval(day, { start, end });
+      // Normalize to start of day for comparison
+      const start = startOfDay(new Date(leave.startDate));
+      const end = startOfDay(new Date(leave.endDate));
+      return isWithinInterval(d, { start, end });
     });
   };
 
@@ -66,34 +69,34 @@ export default function Calendar({ leaves, holidays, onDateClick }: Props) {
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
-  <div className="card flex flex-col p-0 overflow-hidden border-none shadow-xl bg-white/80 backdrop-blur-md mb-8">
+  <div className="card flex flex-col p-0 overflow-hidden border-none shadow-2xl bg-white/90 backdrop-blur-lg mb-8">
   
-    <div className="shrink-0 flex items-center justify-between p-4 bg-gradient-to-r from-brand-600 to-brand-700 text-white">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-          <CalendarIcon className="w-5 h-5 text-white" />
+    <div className="shrink-0 flex items-center justify-between p-5 bg-gradient-to-br from-brand-600 to-brand-800 text-white">
+      <div className="flex items-center gap-4">
+        <div className="p-2.5 bg-white/20 rounded-2xl backdrop-blur-md border border-white/20 shadow-inner">
+          <CalendarIcon className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-bold tracking-tight">
-            {formatAppDate(currentMonth)}
+          <h2 className="text-2xl font-black tracking-tight drop-shadow-sm">
+            {format(currentMonth, 'MMMM yyyy')}
           </h2>
-          <p className="text-xs text-brand-100 font-medium uppercase tracking-wider">
-            Leave Scheduler
+          <p className="text-[10px] text-brand-100 font-bold uppercase tracking-[0.2em] opacity-80">
+            Leave Planner & Tracker
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 bg-white/10 p-1 rounded-xl backdrop-blur-sm border border-white/10">
+      <div className="flex items-center gap-2 bg-black/10 p-1.5 rounded-2xl backdrop-blur-md border border-white/10 shadow-lg">
         <button
           onClick={prevMonth}
-          className="p-2 hover:bg-white/20 rounded-lg transition-all active:scale-95"
+          className="p-2 hover:bg-white/20 rounded-xl transition-all active:scale-90"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <div className="w-px h-4 bg-white/20" />
+        <div className="w-px h-5 bg-white/20 mx-1" />
         <button
           onClick={nextMonth}
-          className="p-2 hover:bg-white/20 rounded-lg transition-all active:scale-95"
+          className="p-2 hover:bg-white/20 rounded-xl transition-all active:scale-90"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -101,19 +104,19 @@ export default function Calendar({ leaves, holidays, onDateClick }: Props) {
     </div>
 
     {/* Day Names */}
-    <div className="shrink-0 grid grid-cols-7 border-b border-gray-100 bg-gray-50/50">
+    <div className="shrink-0 grid grid-cols-7 border-b border-gray-100 bg-gray-50/80 backdrop-blur-sm">
       {dayNames.map(day => (
         <div
           key={day}
-          className="py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-widest"
+          className="py-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]"
         >
           {day}
         </div>
       ))}
     </div>
 
-    {/* Calendar Grid (50% height) */}
-    <div className="grid grid-cols-7 flex-[0.5] overflow-auto">
+    {/* Calendar Grid */}
+    <div className="grid grid-cols-7 border-l border-t border-gray-100/50">
       {calendarDays.map((day, i) => {
         const dayLeaves = getDayLeaves(day);
         const holiday = getDayHoliday(day);
@@ -125,83 +128,82 @@ export default function Calendar({ leaves, holidays, onDateClick }: Props) {
             key={day.toString()}
             onClick={() => !holiday && onDateClick(day)}
             className={cn(
-              "group relative min-h-[80px] p-1.5 border-r border-b border-gray-50 transition-all hover:bg-brand-50/30 cursor-pointer",
-              !isCurrentMonth && "bg-gray-50/30 text-gray-400",
-              holiday && "bg-indigo-50/40 hover:bg-indigo-50/60",
-              i % 7 === 6 && "border-r-0"
+              "group relative min-h-[110px] p-2 border-r border-b border-gray-100 transition-all cursor-pointer",
+              !isCurrentMonth ? "bg-gray-50/40 text-gray-300" : "bg-white",
+              holiday && "bg-brand-50/30",
+              "hover:z-10 hover:shadow-2xl hover:bg-white hover:scale-[1.02] transform-gpu"
             )}
           >
-            <div className="flex justify-between items-start mb-1">
+            <div className="flex justify-between items-start mb-2">
               <span
                 className={cn(
-                  "text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full transition-colors",
+                  "text-xs font-black w-7 h-7 flex items-center justify-center rounded-xl transition-all",
                   isToday
-                    ? "bg-brand-600 text-white shadow-md shadow-brand-200"
-                    : "text-gray-700",
-                  !isCurrentMonth && "text-gray-400"
+                    ? "bg-brand-600 text-white shadow-lg shadow-brand-200 ring-2 ring-white"
+                    : "text-gray-900",
+                  !isCurrentMonth && "text-gray-300"
                 )}
               >
                 {format(day, 'd')}
               </span>
 
               {isToday && (
-                <span className="text-[10px] font-bold text-brand-600 uppercase tracking-tighter">
-                  Today
-                </span>
+                <div className="w-1.5 h-1.5 rounded-full bg-brand-600 animate-pulse mt-3" />
               )}
             </div>
 
-            <div className="space-y-1 overflow-hidden">
+            <div className="space-y-1.5 overflow-hidden">
               {holiday && (
-                <div className="text-[10px] px-1.5 py-1 rounded-md truncate font-bold bg-indigo-600 text-white shadow-sm border border-indigo-700">
-                  🎉 {holiday.name}
+                <div className="text-[9px] px-2 py-1 rounded-lg truncate font-black bg-brand-600 text-white shadow-sm border border-brand-700 animate-in fade-in zoom-in-95">
+                  ✨ {holiday.name}
                 </div>
               )}
               {dayLeaves.map((leave, idx) => (
                 <div
                   key={leave._id + idx}
                   className={cn(
-                    "text-[10px] px-1.5 py-0.5 rounded-md truncate font-medium border shadow-sm",
+                    "text-[9px] px-2 py-1 rounded-lg truncate font-bold border flex items-center gap-1.5 shadow-sm transition-transform hover:scale-105",
                     leave.status === LeaveStatus.Approved
-                      ? "bg-green-50 text-green-700 border-green-100"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-100"
                       : leave.status === LeaveStatus.Pending
                       ? "bg-amber-50 text-amber-700 border-amber-100"
-                      : "bg-red-50 text-red-700 border-red-100"
+                      : "bg-rose-50 text-rose-700 border-rose-100"
                   )}
                 >
-                  {leave.leaveType === 'Casual'
-                    ? 'CL'
-                    : leave.leaveType === 'Sick'
-                    ? 'SL'
-                    : 'EL'}{' '}
-                  · {leave.userId.name}
+                  <div className={cn(
+                    "w-1.5 h-1.5 rounded-full",
+                    leave.status === LeaveStatus.Approved ? "bg-emerald-500" : 
+                    leave.status === LeaveStatus.Pending ? "bg-amber-500" : "bg-rose-500"
+                  )} />
+                  {leave.leaveType === 'Casual' ? 'CL' : leave.leaveType === 'Sick' ? 'SL' : 'EL'}{' '}
+                  · {leave.userId.name.split(' ')[0]}
                 </div>
               ))}
             </div>
 
-            {/* Hover effect */}
-            <div className="absolute inset-0 bg-brand-600/0 group-hover:bg-brand-600/5 transition-colors pointer-events-none" />
+            {/* Subtle Cell Accent */}
+            <div className="absolute bottom-0 right-0 w-8 h-8 bg-gradient-to-br from-transparent to-gray-50/50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
         );
       })}
     </div>
 
-    {/* Legend */}
-    <div className="shrink-0 p-4 bg-gray-50/50 border-t border-gray-100 flex flex-wrap gap-4 items-center justify-center text-[10px] font-bold uppercase tracking-wider text-gray-500">
-      <div className="flex items-center gap-1.5">
-        <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm shadow-green-200" />
+    {/* Pro Legend */}
+    <div className="shrink-0 p-5 bg-gray-50/80 backdrop-blur-sm border-t border-gray-100 flex flex-wrap gap-6 items-center justify-center text-[10px] font-black uppercase tracking-widest text-gray-500">
+      <div className="flex items-center gap-2">
+        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
         Approved
       </div>
-      <div className="flex items-center gap-1.5">
-        <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-200" />
+      <div className="flex items-center gap-2">
+        <Clock className="w-3.5 h-3.5 text-amber-500" />
         Pending
       </div>
-      <div className="flex items-center gap-1.5">
-        <div className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-200" />
+      <div className="flex items-center gap-2">
+        <XCircle className="w-3.5 h-3.5 text-rose-500" />
         Rejected
       </div>
-      <div className="flex items-center gap-1.5">
-        <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 shadow-sm shadow-indigo-200" />
+      <div className="flex items-center gap-2">
+        <div className="w-3.5 h-3.5 rounded-lg bg-brand-600 shadow-sm" />
         Public Holiday
       </div>
     </div>

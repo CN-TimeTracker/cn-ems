@@ -59,7 +59,7 @@ export {
 } from './useLeaves';
 
 // Attendance
-export { useUpdateLateReason, usePunchIn } from './useAttendance';
+export { useUpdateLateReason, usePunchIn, useAllAttendance } from './useAttendance';
 
 // Dashboard
 export {

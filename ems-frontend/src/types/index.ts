@@ -413,6 +413,7 @@ export interface AdminAttendanceEntry {
   lateReason?: string;
   hasPunchedIn: boolean;
   hasPunchedOut: boolean;
+  date?: string;
 }
 
 // ─────────────────────────────────────────────

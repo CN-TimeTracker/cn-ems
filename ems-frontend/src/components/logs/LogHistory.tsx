@@ -15,6 +15,17 @@ export default function LogHistory({ logs, isAdmin }: Props) {
     return <EmptyState title="No logs found" description="Start logging your work to see history here." />;
   }
 
+  const formatDuration = (hours: number) => {
+    if (!hours) return '0m';
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    if (m === 0 && hours > 0) return '< 1m';
+    return `${m}m`;
+  };
+
   // Group logs by date
   const grouped = logs.reduce((acc, log) => {
     const key = formatAppDate(log.date);
@@ -35,14 +46,6 @@ export default function LogHistory({ logs, isAdmin }: Props) {
                 {dateKey}
               </h3>
               <div className="flex-1 h-px bg-gray-100" />
-              <span className={cn(
-                'text-xs font-semibold px-2 py-0.5 rounded-full',
-                total >= 8 ? 'bg-green-50 text-green-700' :
-                total >= 4 ? 'bg-amber-50 text-amber-700' :
-                'bg-red-50 text-red-700'
-              )}>
-                {total}h total
-              </span>
             </div>
 
             {/* Log entries */}
@@ -75,7 +78,7 @@ export default function LogHistory({ logs, isAdmin }: Props) {
                         {log.notes ?? '—'}
                       </td>
                       <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                        {log.hours}h
+                        {formatDuration(log.hours)}
                       </td>
                     </tr>
                   ))}

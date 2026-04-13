@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { 
   addHoliday, 
   deleteHoliday, 
-  getAllHolidays 
+  getAllHolidays,
+  updateHoliday 
 } from '../controllers/holiday.controller';
 import { protect, roleGuard } from '../middleware/auth.middleware';
 import { UserRole } from '../interfaces';
@@ -14,6 +15,7 @@ router.get('/', protect, getAllHolidays);
 
 // Adding and deleting holidays is restricted to Admin
 router.post('/', protect, roleGuard(UserRole.Admin), addHoliday);
+router.patch('/:id', protect, roleGuard(UserRole.Admin), updateHoliday);
 router.delete('/:id', protect, roleGuard(UserRole.Admin), deleteHoliday);
 
 export default router;

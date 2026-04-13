@@ -133,7 +133,7 @@ export default function EventsPage() {
                     {event.name}
                   </h2>
                   {isAdmin && (
-                    <div className="flex items-center gap-2 sm:absolute sm:-right-24 sm:top-2 mb-4 sm:mb-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <div className="flex items-center gap-2 sm:absolute sm:-right-24 sm:top-2 mb-4 sm:mb-0 transition-all duration-300">
                       <button
                         onClick={() => handleEdit(event)}
                         className="p-2 bg-white shadow-xl rounded-full text-blue-600 hover:scale-110 transition-transform border border-blue-50"

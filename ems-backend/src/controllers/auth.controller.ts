@@ -4,9 +4,11 @@ import { IAuthRequest } from '../interfaces';
 import { asyncHandler } from '../utils/asyncHandler';
 
 import { AttendanceService } from '../services/attendance.service';
+import { TaskService } from '../services/task.service';
 
 const authService = new AuthService();
 const attendanceService = new AttendanceService();
+const taskService = new TaskService();
 
 // ─────────────────────────────────────────────
 // POST /api/v1/auth/login
@@ -70,12 +72,18 @@ export const getMe = asyncHandler(async (req: IAuthRequest, res: Response) => {
 // ─────────────────────────────────────────────
 
 export const logout = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  // Auto-pause shift (start a break) upon logout for non-admins
+  // Auto-pause shift (start a break) and pause tasks upon logout for non-admins
   if (req.user && req.user.role !== 'Admin') {
     try {
       await attendanceService.startBreak(req.user.id);
     } catch (err) {
       // Swallow (e.g. already paused or not punched in)
+    }
+
+    try {
+      await taskService.pauseAllRunningTasks(req.user.id);
+    } catch (err) {
+      // Swallow errors and force logout success
     }
   }
 

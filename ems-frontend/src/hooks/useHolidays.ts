@@ -29,6 +29,25 @@ export const useAddHoliday = () => {
   });
 };
 
+export const useUpdateHoliday = () => {
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { date?: string; name?: string } }) => holidayService.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['holidays'] });
+      dispatch(addToast({ type: 'success', message: 'Holiday updated successfully' }));
+    },
+    onError: (error: any) => {
+      dispatch(addToast({ 
+        type: 'error', 
+        message: error.response?.data?.message || 'Failed to update holiday' 
+      }));
+    },
+  });
+};
+
 export const useDeleteHoliday = () => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();

@@ -43,11 +43,11 @@ export class CronService {
       const todayISTMidnight = getISTMidnight(now);
       const yesterdayISTMidnight = new Date(todayISTMidnight.getTime() - (24 * 60 * 60 * 1000));
 
-      console.log(`🔍 Checking for open sessions for: ${yesterdayISTMidnight.toISOString()}`);
+      console.log(`🔍 Checking for stale open sessions before: ${todayISTMidnight.toISOString()}`);
 
-      // 2. Find records for yesterday with no punchOutTime
+      // 2. Find records for any day before today with no punchOutTime
       const openRecords = await Attendance.find({
-        date: yesterdayISTMidnight,
+        date: { $lt: todayISTMidnight },
         punchOutTime: { $exists: false }
       });
 
@@ -63,9 +63,9 @@ export class CronService {
         const breaks = record.breaks as IBreakEntry[];
         const openBreak = breaks.find(b => !b.endTime);
         
-        // Auto punch out time: 23:59:59 of that day
-        // Yesterday's midnight + 24h - 1s
-        const autoPunchOutTime = new Date(yesterdayISTMidnight.getTime() + (24 * 60 * 60 * 1000) - 1000);
+        // Auto punch out time: 23:59:59 of that specific record's day
+        const recordDate = new Date(record.date);
+        const autoPunchOutTime = new Date(recordDate.getTime() + (24 * 60 * 60 * 1000) - 1000);
 
         if (openBreak) {
           openBreak.endTime = autoPunchOutTime;

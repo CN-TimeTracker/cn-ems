@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { UserRole, ProjectStatus, TaskStatus, LeaveStatus, LeaveType, LeaveDuration, HalfDayType } from '../interfaces';
+import { TimeService } from '../services';
 
 // ─────────────────────────────────────────────
 // AUTH
@@ -147,19 +148,19 @@ export const createWorkLogSchema = z.object({
 export const createLeaveSchema = z.object({
   startDate: z.string().refine((d: string) => !isNaN(Date.parse(d)), 'Invalid start date'),
   endDate: z.string().refine((d: string) => !isNaN(Date.parse(d)), 'Invalid end date'),
-  reason: z.string().min(5, 'Please provide a reason').max(500),
+  reason: z.string().min(1, 'Please provide a reason').max(500),
   leaveType: z.nativeEnum(LeaveType),
   duration: z.nativeEnum(LeaveDuration),
   halfDayType: z.nativeEnum(HalfDayType).optional(),
 }).superRefine((data, ctx) => {
   if (data.leaveType === LeaveType.Casual) {
-    const today = new Date();
+    const today = TimeService.now();
     const minDate = new Date(today);
     minDate.setDate(today.getDate() + 5);
     
-    // Create standard YYYY-MM-DD comparisons
+    // Create standard YYYY-MM-DD comparisons for safety
     const minStr = minDate.toISOString().split('T')[0];
-    const startStr = data.startDate;
+    const startStr = data.startDate; // Already yyyy-mm-dd from frontend
     
     if (startStr < minStr) {
       ctx.addIssue({

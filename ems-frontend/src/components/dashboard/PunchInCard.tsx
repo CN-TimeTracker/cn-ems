@@ -7,6 +7,7 @@ import * as AttendanceService from '@/services/attendance.service';
 import { useAppDispatch } from '@/store/hooks';
 import { addToast } from '@/store/uiSlice';
 import Badge from '@/components/ui/Badge';
+import { syncOnlineTime, getOnlineTimeMs, isOnlineTimeSynced } from '@/lib/onlineTime';
 
 // ─────────────────────────────────────────────
 // CONSTANTS
@@ -19,7 +20,7 @@ const GRACE_M       = 15;
 
 /** Get current IST hours/minutes */
 function getNowISTComponents() {
-  const utcMs = Date.now();
+  const utcMs = getOnlineTimeMs();
   const istMs = utcMs + IST_OFFSET_MS;
   const ist   = new Date(istMs);
   return { h: ist.getUTCHours(), m: ist.getUTCMinutes(), s: ist.getUTCSeconds() };
@@ -43,7 +44,7 @@ function formatTimeIST(date: Date | string) {
 }
 
 function currentTimeIST() {
-  return formatTimeIST(new Date());
+  return formatTimeIST(new Date(getOnlineTimeMs()));
 }
 
 function formatDuration(ms: number) {
@@ -62,18 +63,30 @@ function formatDuration(ms: number) {
 export default function PunchInCard() {
   const dispatch      = useAppDispatch();
   const queryClient   = useQueryClient();
+  const [isTimeReady, setIsTimeReady] = useState(isOnlineTimeSynced());
+  
   const [nowStr, setNowStr] = useState<string>(currentTimeIST());
-  const [nowMs, setNowMs] = useState<number>(Date.now());
+  const [nowMs, setNowMs] = useState<number>(getOnlineTimeMs());
   const [lateReason, setLateReason] = useState('');
+
+  // Fetch true online time once
+  useEffect(() => {
+    syncOnlineTime().then(() => {
+      setIsTimeReady(true);
+      setNowStr(currentTimeIST());
+      setNowMs(getOnlineTimeMs());
+    });
+  }, []);
 
   // Tick the clock every second for live timers
   useEffect(() => {
+    if (!isTimeReady) return;
     const id = setInterval(() => {
       setNowStr(currentTimeIST());
-      setNowMs(Date.now());
+      setNowMs(getOnlineTimeMs());
     }, 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [isTimeReady]);
 
   const { data: record, isLoading } = useQuery({
     queryKey: ['attendance', 'today'],
@@ -81,7 +94,7 @@ export default function PunchInCard() {
     staleTime: 60_000,
   });
 
-  const late = isLateNow();
+  const late = isTimeReady ? isLateNow() : false;
 
   // Mutations
   const punchInMut = useMutation({
@@ -245,7 +258,7 @@ export default function PunchInCard() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-0.5">Current Time (IST)</p>
-            <p className="text-3xl font-bold tabular-nums text-gray-900">{isLoading ? '—' : nowStr}</p>
+            <p className="text-3xl font-bold tabular-nums text-gray-900">{isLoading || !isTimeReady ? '—' : nowStr}</p>
             <p className="text-xs text-gray-400 mt-1">Office hours: 10:00 AM – 7:00 PM · Grace: 15 min</p>
           </div>
           <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${late ? 'bg-amber-50' : 'bg-brand-50'}`}>
@@ -272,11 +285,11 @@ export default function PunchInCard() {
 
         <button
           onClick={handlePunchIn}
-          disabled={anyMutPending || isLoading}
+          disabled={anyMutPending || isLoading || !isTimeReady}
           className={`w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-semibold text-white text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60
             ${late ? 'bg-amber-500 hover:bg-amber-600 focus:ring-amber-400' : 'bg-brand-600 hover:bg-brand-700 focus:ring-brand-500'}`}
         >
-          {punchInMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Punching In…</> : <><LogIn className="w-4 h-4" /> Punch In Now</>}
+          {!isTimeReady || punchInMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> {isTimeReady ? 'Punching In…' : 'Syncing Time…'}</> : <><LogIn className="w-4 h-4" /> Punch In Now</>}
         </button>
       </div>
     </div>

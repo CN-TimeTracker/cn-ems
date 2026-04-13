@@ -15,4 +15,8 @@ export const holidayService = {
   delete: async (id: string): Promise<void> => {
     await api.delete(`/holidays/${id}`);
   },
+  update: async (id: string, data: { date?: string; name?: string }): Promise<Holiday> => {
+    const response = await api.patch<{ success: boolean; data: Holiday }>(`/holidays/${id}`, data);
+    return response.data.data;
+  },
 };

@@ -356,6 +356,7 @@ export default function TasksPage() {
             <thead className="bg-black text-white">
               <tr>
                 <th className="p-4">Project</th>
+                {isAdmin && <th>Employee</th>}
                 <th>Work Type</th>
                 <th>Description</th>
                 <th>Status</th>
@@ -369,6 +370,11 @@ export default function TasksPage() {
                   <td className="p-4">
                     {(task.projectId as any)?.name}
                   </td>
+                  {isAdmin && (
+                    <td className="font-medium text-gray-900">
+                      {task.assignedTo?.name || '—'}
+                    </td>
+                  )}
                   <td>{task.workType}</td>
                   <td>{task.description}</td>
                   <td>{task.status}</td>

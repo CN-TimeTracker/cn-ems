@@ -1,21 +1,23 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useApplyLeave } from '@/hooks';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
-import { Loader2, Calendar as CalendarIcon, Info } from 'lucide-react';
+import { Loader2, Calendar as CalendarIcon, Info, AlertCircle } from 'lucide-react';
 import { formatAppDate, parseAppDate } from '@/lib/dateUtils';
-import { format } from 'date-fns';
+import { format, isSameDay, addDays, startOfDay } from 'date-fns';
 import { LeaveType, LeaveDuration, HalfDayType } from '@/types';
+import { Holiday } from '@/types/holiday';
 
 interface Props { 
   onClose: () => void; 
   initialDate?: Date;
+  holidays: Holiday[];
 }
 
-export default function LeaveForm({ onClose, initialDate }: Props) {
+export default function LeaveForm({ onClose, initialDate, holidays }: Props) {
   const defaultDate = initialDate ? format(initialDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
   
   const [form, setForm] = useState({ 
@@ -29,34 +31,77 @@ export default function LeaveForm({ onClose, initialDate }: Props) {
     halfDayType: HalfDayType.FirstHalf
   });
 
+  const [dateError, setDateError] = useState<string | null>(null);
   const { mutate: applyLeave, isPending } = useApplyLeave();
   const startRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLInputElement>(null);
 
-  // Compute dynamic min date
-  const today = new Date();
-  const minAllowedDate = new Date(today);
-  if (form.leaveType === LeaveType.Casual) {
-    minAllowedDate.setDate(today.getDate() + 5);
-  }
-  const minDateStr = format(minAllowedDate, 'yyyy-MM-dd');
+  // Compute boundaries
+  const today = startOfDay(new Date());
+  
+  const minCasualDate = addDays(today, 5);
+  const minDateStr = form.leaveType === LeaveType.Casual 
+    ? format(minCasualDate, 'yyyy-MM-dd') 
+    : format(today, 'yyyy-MM-dd');
+
+  // Live Validation
+  useEffect(() => {
+    const start = new Date(form.startDate);
+    const end = new Date(form.endDate);
+
+    if (isNaN(start.getTime())) {
+      setDateError(null);
+      return;
+    }
+
+    // 1. Advance notice for Casual
+    if (form.leaveType === LeaveType.Casual) {
+      if (start < minCasualDate) {
+        setDateError(`Casual leave requires at least 5 days of advance notice (Min date: ${format(minCasualDate, 'dd/MM/yyyy')})`);
+        return;
+      }
+    }
+
+    // 2. Holiday Check
+    const holidayInRange = holidays.find(h => {
+      const hDate = new Date(h.date);
+      if (form.duration === LeaveDuration.HalfDay) {
+        return isSameDay(hDate, start);
+      }
+      return hDate >= start && hDate <= end;
+    });
+
+    if (holidayInRange) {
+      setDateError(`The selected range includes a Public Holiday: ${holidayInRange.name}`);
+      return;
+    }
+
+    // 3. Simple sequence check
+    if (form.duration === LeaveDuration.FullDay && end < start) {
+      setDateError('End date cannot be before start date');
+      return;
+    }
+
+    setDateError(null);
+  }, [form.startDate, form.endDate, form.leaveType, form.duration, holidays, minCasualDate]);
 
   const set = (field: string, value: any) => {
     setForm((f) => {
       const next = { ...f, [field]: value };
       
-      // Auto-correct dates if changing type
+      // Auto-correct if needed
       if (field === 'leaveType' || field === 'startDate') {
          const type = field === 'leaveType' ? value : next.leaveType;
-         const min = new Date();
-         if (type === LeaveType.Casual) min.setDate(min.getDate() + 5);
+         const min = type === LeaveType.Casual ? minCasualDate : today;
          const minStr = format(min, 'yyyy-MM-dd');
          
          if (next.startDate < minStr) {
            next.startDate = minStr;
+           next.displayStartDate = format(min, 'dd/MM/yyyy');
          }
          if (next.endDate < next.startDate) {
            next.endDate = next.startDate;
+           next.displayEndDate = next.displayStartDate;
          }
       }
       return next;
@@ -65,25 +110,21 @@ export default function LeaveForm({ onClose, initialDate }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (dateError) return;
+
     const payload = {
       ...form,
-      // Only include halfDayType if duration is HalfDay
       halfDayType: form.duration === LeaveDuration.HalfDay ? form.halfDayType : undefined,
-      // If it's a half day, endDate must be the same as startDate
       endDate: form.duration === LeaveDuration.HalfDay ? form.startDate : form.endDate
     };
     applyLeave(payload, { onSuccess: onClose });
   };
 
-  // Calculate number of days
-  const days = form.duration === LeaveDuration.HalfDay 
-    ? 0.5 
-    : (form.startDate && form.endDate
-        ? Math.max(1, Math.round(
-            (new Date(form.endDate).getTime() - new Date(form.startDate).getTime())
-            / (1000 * 60 * 60 * 24)
-          ) + 1)
-        : 0);
+  const days = useMemo(() => {
+    if (form.duration === LeaveDuration.HalfDay) return 0.5;
+    if (!form.startDate || !form.endDate) return 0;
+    return Math.max(1, Math.round((new Date(form.endDate).getTime() - new Date(form.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1);
+  }, [form.startDate, form.endDate, form.duration]);
 
   return (
     <Modal open onClose={onClose} title="Apply for Leave">
@@ -129,7 +170,7 @@ export default function LeaveForm({ onClose, initialDate }: Props) {
                 const parsed = parseAppDate(val);
                 if (parsed) set('startDate', format(parsed, 'yyyy-MM-dd'));
               }} 
-              className="pr-10"
+              className={`pr-10 ${dateError ? 'border-red-300 focus:ring-red-500' : ''}`}
             />
             <button
               type="button"
@@ -141,6 +182,7 @@ export default function LeaveForm({ onClose, initialDate }: Props) {
             <input
               ref={startRef}
               type="date"
+              min={minDateStr}
               className="absolute inset-0 w-0 h-0 opacity-0 pointer-events-none"
               onChange={(e) => {
                 const val = e.target.value;
@@ -169,7 +211,7 @@ export default function LeaveForm({ onClose, initialDate }: Props) {
                   const parsed = parseAppDate(val);
                   if (parsed) set('endDate', format(parsed, 'yyyy-MM-dd'));
                 }} 
-                className="pr-10"
+                className={`pr-10 ${dateError ? 'border-red-300 focus:ring-red-500' : ''}`}
               />
               <button
                 type="button"
@@ -181,6 +223,7 @@ export default function LeaveForm({ onClose, initialDate }: Props) {
               <input
                 ref={endRef}
                 type="date"
+                min={form.startDate || minDateStr}
                 className="absolute inset-0 w-0 h-0 opacity-0 pointer-events-none"
                 onChange={(e) => {
                   const val = e.target.value;
@@ -209,19 +252,29 @@ export default function LeaveForm({ onClose, initialDate }: Props) {
           )}
         </div>
 
+        {/* Live Validation Error */}
+        {dateError && (
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm animate-in fade-in slide-in-from-top-1">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span className="font-semibold">{dateError}</span>
+          </div>
+        )}
+
         {/* Info Banner */}
-        <div className="rounded-2xl bg-brand-50/50 border border-brand-100 p-4 flex items-start gap-3">
-          <div className="p-2 bg-brand-100 rounded-lg shrink-0">
-            <Info className="w-4 h-4 text-brand-600" />
+        {!dateError && (
+          <div className="rounded-2xl bg-brand-50/50 border border-brand-100 p-4 flex items-start gap-3">
+            <div className="p-2 bg-brand-100 rounded-lg shrink-0">
+              <Info className="w-4 h-4 text-brand-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-brand-900">Leave Summary</p>
+              <p className="text-xs text-brand-700 mt-0.5">
+                Applying for <span className="font-bold underline">{days} day{days !== 1 ? 's' : ''}</span> of {form.leaveType.toLowerCase()} leave.
+                {form.leaveType === LeaveType.Casual && " Notice: Casual leave requires at least 5 days of advance notice."}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-brand-900">Leave Summary</p>
-            <p className="text-xs text-brand-700 mt-0.5">
-              Applying for <span className="font-bold underline">{days} day{days !== 1 ? 's' : ''}</span> of {form.leaveType.toLowerCase()} leave.
-              {form.leaveType === LeaveType.Casual && " Notice: Casual leave requires at least 5 days of advance notice."}
-            </p>
-          </div>
-        </div>
+        )}
 
         <Textarea 
           label="Reason for Leave" 
@@ -234,7 +287,13 @@ export default function LeaveForm({ onClose, initialDate }: Props) {
 
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={onClose} className="btn-secondary h-12 flex-1 rounded-xl">Cancel</button>
-          <button type="submit" disabled={isPending} className="btn-primary h-12 flex-1 justify-center rounded-xl shadow-lg shadow-brand-200">
+          <button 
+            type="submit" 
+            disabled={isPending || !!dateError} 
+            className={`btn-primary h-12 flex-1 justify-center rounded-xl shadow-lg transition-all ${
+              (!!dateError) ? 'opacity-50 grayscale cursor-not-allowed shadow-none' : 'shadow-brand-200'
+            }`}
+          >
             {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <span>Submit Request</span>}
           </button>
         </div>

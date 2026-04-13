@@ -6,6 +6,7 @@ import {
   endBreak,
   getMyToday, 
   getAdminTodayView,
+  getAdminAllAttendanceHistory,
   updateLateReason
 } from '../controllers/attendance.controller';
 import { protect, adminOnly } from '../middleware/auth.middleware';
@@ -35,5 +36,8 @@ router.patch('/today/reason', updateLateReason);
 
 // GET    /api/v1/attendance/admin/today — Admin: all employees' attendance today
 router.get('/admin/today', adminOnly, getAdminTodayView);
+
+// GET    /api/v1/attendance/admin/all — Admin: all attendance history
+router.get('/admin/all', adminOnly, getAdminAllAttendanceHistory);
 
 export default router;

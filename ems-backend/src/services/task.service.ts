@@ -9,6 +9,7 @@ import {
   ITaskFilters,
   TaskStatus,
 } from '../interfaces';
+import { TimeService } from './time.service';
 
 // ─────────────────────────────────────────────
 // SERVICE
@@ -154,8 +155,14 @@ export class TaskService {
 
     // ── Start target task ─────────────────────────────────────────────
     task.isRunning = true;
-    task.lastStartedAt = new Date();
+    task.lastStartedAt = TimeService.now();
     task.status = TaskStatus.CurrentlyWorking;
+
+    // Self-heal legacy tasks created before these fields were strictly required
+    if (!task.date) task.date = TimeService.now();
+    if (!task.time) task.time = '00:00';
+    if (!task.workType) task.workType = 'General Task';
+
     await task.save();
 
     return this._populate(task._id.toString());
@@ -172,7 +179,7 @@ export class TaskService {
     }
 
     if (task.isRunning && task.lastStartedAt) {
-      const now = new Date();
+      const now = TimeService.now();
       const startTime = new Date(task.lastStartedAt);
       const elapsedMs = now.getTime() - startTime.getTime();
       const elapsedMins = elapsedMs / (1000 * 60);
@@ -180,24 +187,38 @@ export class TaskService {
       task.totalMinutesSpent = (task.totalMinutesSpent || 0) + elapsedMins;
       task.isRunning = false;
       task.lastStartedAt = null;
+
+      // Self-heal legacy tasks
+      if (!task.date) task.date = TimeService.now();
+      if (!task.time) task.time = '00:00';
+      if (!task.workType) task.workType = 'General Task';
+
       await task.save();
 
       // Auto-log the session as worked hours on the project
-      const hours = elapsedMins / 60;
+      let hours = elapsedMins / 60;
+      if (hours > 10) hours = 10; // Cap at 10 hours so we don't trip Mongoose max validation
+      
       if (hours > 0) {
         const logDate = new Date(now);
         logDate.setUTCHours(0, 0, 0, 0);
 
-        await WorkLog.create({
-          userId,
-          projectId: task.projectId,
-          taskId: task._id,
-          hours: Number(hours.toFixed(4)),
-          notes: `Auto-logged from timer (${task.workType || 'Session'})`,
-          startTime,
-          endTime: now,
-          date: logDate
-        });
+        try {
+          await WorkLog.create({
+            userId,
+            projectId: task.projectId,
+            taskId: task._id,
+            hours: Number(hours.toFixed(4)),
+            notes: `Auto-logged from timer (${task.workType || 'Session'})`,
+            startTime,
+            endTime: now,
+            date: logDate
+          });
+        } catch (e: any) {
+          console.error(`[TaskService] Failed to auto-create worklog: ${e.message}`);
+          // We swallow the error so that the task stop is successful regardless,
+          // rather than throwing 400 Bad Request if they hit a random boundary condition.
+        }
       }
     }
 
@@ -205,14 +226,44 @@ export class TaskService {
   }
 
   /**
+   * Pauses all running tasks for a specific user.
+   * Useful for auto-pausing tasks upon logout or midnight cron.
+   */
+  async pauseAllRunningTasks(userId: string): Promise<void> {
+    const runningTasks = await Task.find({ 
+      assignedTo: userId, 
+      isRunning: true
+    });
+
+    for (const task of runningTasks) {
+      try {
+        await this.pauseTimer(task._id.toString(), userId);
+      } catch (err) {
+        console.error(`[TaskService] Failed to auto-pause task ${task._id} on auto-action:`, err);
+      }
+    }
+  }
+
+  /**
    * Stops the timer, accumulates time, and marks task as Done.
    */
   async stopTimer(taskId: string, userId: string): Promise<ITask> {
     const task = await this.pauseTimer(taskId, userId);
-    task.status = TaskStatus.ProjectCompleted;
-    await task.save();
     
-    return this._populate(task._id.toString());
+    // We must re-fetch the raw document to save it, because pauseTimer returns a populated lean-like document
+    const rawTask = await Task.findById(taskId);
+    if (!rawTask) throw new Error('Task not found');
+    
+    rawTask.status = TaskStatus.ProjectCompleted;
+
+    // Self-heal legacy tasks
+    if (!rawTask.date) rawTask.date = TimeService.now();
+    if (!rawTask.time) rawTask.time = '00:00';
+    if (!rawTask.workType) rawTask.workType = 'General Task';
+
+    await rawTask.save();
+    
+    return this._populate(rawTask._id.toString());
   }
 
   // ─── PRIVATE HELPERS ──────────────────────────────────────────────────────

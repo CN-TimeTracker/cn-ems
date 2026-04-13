@@ -60,6 +60,16 @@ export const getAdminTodayView = async (): Promise<AdminAttendanceEntry[]> => {
   const res = await api.get<ApiResponse<AdminAttendanceEntry[]>>('/attendance/admin/today');
   return res.data.data;
 };
+
+// ─────────────────────────────────────────────
+// ADMIN: all attendance history with filters
+// GET /api/v1/attendance/admin/all
+// ─────────────────────────────────────────────
+
+export const getAdminAllAttendanceHistory = async (filters: any): Promise<AdminAttendanceEntry[]> => {
+  const res = await api.get<ApiResponse<AdminAttendanceEntry[]>>('/attendance/admin/all', { params: filters });
+  return res.data.data;
+};
 // ─────────────────────────────────────────────
 // EMPLOYEE: update today's late reason
 // PATCH  /api/v1/attendance/today/reason

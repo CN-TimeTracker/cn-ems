@@ -7,3 +7,4 @@ export { LeaveService }      from './leave.service';
 export { DashboardService }  from './dashboard.service';
 export { AttendanceService } from './attendance.service';
 export { PayslipService }    from './payslip.service';
+export { TimeService }       from './time.service';
