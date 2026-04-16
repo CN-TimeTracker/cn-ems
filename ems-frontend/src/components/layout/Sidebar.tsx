@@ -24,7 +24,7 @@ const NAV = [
   // Admin Only
   { href: '/work-logs',         label: 'Work Logs',         icon: Clock,           adminOnly: true },
   { href: '/attendance',        label: 'Attendance',        icon: UserCheck,       adminOnly: true },
-  { href: '/users',             label: 'Users',             icon: Users,           adminOnly: true },
+  { href: '/users',             label: 'Employees',             icon: Users,           adminOnly: true },
   { href: '/profile-requests',  label: 'Profile Approvals', icon: FileLock2,       adminOnly: true },
 ];
 

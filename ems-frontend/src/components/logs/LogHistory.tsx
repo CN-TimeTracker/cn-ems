@@ -54,9 +54,9 @@ export default function LogHistory({ logs, isAdmin }: Props) {
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
                     {isAdmin && <th className="text-left font-medium text-gray-500 px-4 py-2.5 text-xs">Employee</th>}
-                    <th className="text-left font-medium text-gray-500 px-4 py-2.5 text-xs">Task</th>
                     <th className="text-left font-medium text-gray-500 px-4 py-2.5 text-xs">Project</th>
-                    <th className="text-left font-medium text-gray-500 px-4 py-2.5 text-xs">Notes</th>
+                    <th className="text-left font-medium text-gray-500 px-4 py-2.5 text-xs">Work Type</th>
+                    <th className="text-left font-medium text-gray-500 px-4 py-2.5 text-xs">Description</th>
                     <th className="text-right font-medium text-gray-500 px-4 py-2.5 text-xs">Hours</th>
                   </tr>
                 </thead>
@@ -68,22 +68,21 @@ export default function LogHistory({ logs, isAdmin }: Props) {
                           {(log.userId as any)?.name ?? '—'}
                         </td>
                       )}
-                      <td className="px-4 py-3 text-gray-900 font-medium max-w-[200px] truncate">
-                        {(log.taskId as any)?.title ?? '—'}
-                      </td>
                       <td className="px-4 py-3 text-gray-500 max-w-[160px] truncate">
                         {(log.projectId as any)?.name ?? '—'}
                       </td>
-                      <td className="px-4 py-3 text-gray-400 text-xs max-w-[200px] truncate">
-                        {log.notes ?? '—'}
+                      <td className="px-4 py-3 text-gray-900 font-medium max-w-[200px] truncate">
+                        {(log.taskId as any)?.workType ?? 'General Task'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 text-xs max-w-[200px] truncate" title={log.notes || (log.taskId as any)?.description}>
+                        {log.notes || (log.taskId as any)?.description || '—'}
                       </td>
                       <td className="px-4 py-3 text-right font-semibold text-gray-900">
                         {formatDuration(log.hours)}
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
+                </tbody>              </table>
             </div>
           </div>
         );

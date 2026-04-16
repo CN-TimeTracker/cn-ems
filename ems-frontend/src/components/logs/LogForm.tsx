@@ -81,9 +81,9 @@ export default function LogForm({ onClose }: Props) {
         />
 
         <Select
-          label="Task"
+          label="Work Type"
           required
-          placeholder={form.projectId ? 'Select task' : 'Select a project first'}
+          placeholder={form.projectId ? 'Select work type' : 'Select a project first'}
           value={form.taskId}
           onChange={(e) => set('taskId', e.target.value)}
           disabled={!form.projectId}
@@ -144,7 +144,7 @@ export default function LogForm({ onClose }: Props) {
         </div>
 
         <Textarea
-          label="Notes (optional)"
+          label="Description (optional)"
           placeholder="What did you work on?"
           value={form.notes}
           onChange={(e) => set('notes', e.target.value)}

@@ -7,6 +7,7 @@ import { selectCurrentUser } from '@/store/authSlice';
 import { UserRole, TaskStatus, Task } from '@/types';
 import { Plus, Filter, Pause, Play, StopCircle, RefreshCcw, Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatAppDate } from '@/lib/dateUtils';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
 import TaskModal from '@/components/tasks/TaskModal';
@@ -132,7 +133,23 @@ export default function TasksPage() {
   const user = useAppSelector(selectCurrentUser);
   const isAdmin = user?.role === UserRole.Admin;
 
-  const [filters, setFilters] = useState<any>({});
+  const [filters, setFilters] = useState<any>(() => {
+    if (user?.role === UserRole.Admin) {
+      const today = new Date();
+      const y = today.getFullYear();
+      const m = String(today.getMonth() + 1).padStart(2, '0');
+      const d = String(today.getDate()).padStart(2, '0');
+      const isoDate = `${y}-${m}-${d}`;
+      const displayDate = `${d}/${m}/${y}`;
+      return {
+        startDate: isoDate,
+        endDate: isoDate,
+        displayStartDate: displayDate,
+        displayEndDate: displayDate
+      };
+    }
+    return {};
+  });
   const [showFilters, setShowFilters] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [reopenModalOpen, setReopenModalOpen] = useState(false);
@@ -355,30 +372,38 @@ export default function TasksPage() {
           <table className="w-full text-sm">
             <thead className="bg-black text-white">
               <tr>
-                <th className="p-4">Project</th>
-                {isAdmin && <th>Employee</th>}
-                <th>Work Type</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th>Timer</th>
+                <th className="p-4 text-left">Date</th>
+                <th className="p-4 text-left">Project</th>
+                {isAdmin && <th className="p-4 text-left">Employee</th>}
+                <th className="p-4 text-left">Work Type</th>
+                <th className="p-4 text-left">Description</th>
+                <th className="p-4 text-left">Status</th>
+                <th className="p-4 text-left">Timer</th>
               </tr>
             </thead>
 
             <tbody>
               {tasks.map((task) => (
-                <tr key={task._id} className="border-b">
+                <tr key={task._id} className="border-b transition-colors hover:bg-gray-50/50">
+                  <td className="p-4 whitespace-nowrap font-medium text-gray-600">
+                    {formatAppDate(task.date)}
+                  </td>
                   <td className="p-4">
                     {(task.projectId as any)?.name}
                   </td>
                   {isAdmin && (
-                    <td className="font-medium text-gray-900">
+                    <td className="p-4 font-medium text-gray-900">
                       {task.assignedTo?.name || '—'}
                     </td>
                   )}
-                  <td>{task.workType}</td>
-                  <td>{task.description}</td>
-                  <td>{task.status}</td>
-                  <td>
+                  <td className="p-4">{task.workType}</td>
+                  <td className="p-4">{task.description}</td>
+                  <td className="p-4">
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                      {task.status}
+                    </span>
+                  </td>
+                  <td className="p-4">
                     <TaskTimerCell
                       task={task}
                       hasRunningTask={hasRunningTask}

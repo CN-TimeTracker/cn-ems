@@ -209,7 +209,7 @@ export class TaskService {
             projectId: task.projectId,
             taskId: task._id,
             hours: Number(hours.toFixed(4)),
-            notes: `Auto-logged from timer (${task.workType || 'Session'})`,
+            notes: task.description || task.workType || 'General Task Session',
             startTime,
             endTime: now,
             date: logDate

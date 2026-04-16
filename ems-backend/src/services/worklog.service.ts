@@ -112,7 +112,7 @@ export class WorkLogService {
 
     return WorkLog.find(query)
       .populate('projectId', 'name clientName')
-      .populate('taskId', 'title status')
+      .populate('taskId', 'workType description status')
       .sort({ date: -1 });
   }
 
@@ -133,7 +133,7 @@ export class WorkLogService {
     return WorkLog.find(query)
       .populate('userId', 'name email role')
       .populate('projectId', 'name clientName')
-      .populate('taskId', 'title status')
+      .populate('taskId', 'workType description status')
       .sort({ date: -1 });
   }
 
@@ -285,7 +285,7 @@ export class WorkLogService {
     const log = await WorkLog.findById(id)
       .populate('userId', 'name email')
       .populate('projectId', 'name clientName')
-      .populate('taskId', 'title status deadline');
+      .populate('taskId', 'workType description status deadline');
     if (!log) throw new Error('Work log not found');
     return log;
   }

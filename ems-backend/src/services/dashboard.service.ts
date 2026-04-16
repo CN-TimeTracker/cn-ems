@@ -182,7 +182,7 @@ export class DashboardService {
         .populate('projectId', 'name').sort({ deadline: 1 }),
 
       WorkLog.find({ userId: userObjectId })
-        .populate('projectId', 'name').populate('taskId', 'title')
+        .populate('projectId', 'name').populate('taskId', 'workType description')
         .sort({ date: -1 }).limit(5),
 
       Attendance.findOne({ userId: userObjectId, date: today }).lean(),

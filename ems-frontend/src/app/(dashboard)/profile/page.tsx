@@ -423,10 +423,10 @@ export default function ProfilePage() {
             }}
             className="flex flex-col md:flex-row items-end gap-4 max-w-2xl"
           >
-            <div className="space-y-1 w-full">
+            {/* <div className="space-y-1 w-full">
               <label className="text-xs font-semibold text-gray-500 uppercase">Current Password</label>
               <input type="password" required value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full text-sm p-2 border border-brand-200 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" />
-            </div>
+            </div> */}
             <div className="space-y-1 w-full">
               <label className="text-xs font-semibold text-gray-500 uppercase">New Password</label>
               <input type="password" required value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full text-sm p-2 border border-brand-200 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" />

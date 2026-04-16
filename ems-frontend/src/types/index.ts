@@ -309,7 +309,7 @@ export interface WorkLog {
   _id: string;
   userId: Pick<User, '_id' | 'name' | 'email'>;
   projectId: Pick<Project, '_id' | 'name' | 'clientName'>;
-  taskId: Pick<Task, '_id' | 'workType' | 'status'>;
+  taskId: Pick<Task, '_id' | 'workType' | 'description' | 'status'>;
   hours: number;
   notes?: string;
   startTime?: string;
