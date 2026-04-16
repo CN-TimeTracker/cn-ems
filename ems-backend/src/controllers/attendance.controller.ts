@@ -3,7 +3,10 @@ import { AttendanceService } from '../services/attendance.service';
 import { IAuthRequest } from '../interfaces';
 import { asyncHandler } from '../utils/asyncHandler';
 
+import { TaskService } from '../services/task.service';
+
 const attendanceService = new AttendanceService();
+const taskService = new TaskService();
 
 // ─────────────────────────────────────────────
 // POST /api/v1/attendance/punch-in  [Employee]
@@ -30,6 +33,14 @@ export const punchIn = asyncHandler(async (req: IAuthRequest, res: Response) => 
 export const punchOut = asyncHandler(async (req: IAuthRequest, res: Response) => {
   try {
     const record = await attendanceService.punchOut(req.user!.id);
+    
+    // Auto-stop all running tasks on punch out (last logout of the day)
+    try {
+      await taskService.stopAllRunningTasks(req.user!.id);
+    } catch (e) {
+      console.error('Task stop failed during punchOut', e);
+    }
+    
     res.status(200).json({
       success: true,
       message: 'Punched out successfully.',

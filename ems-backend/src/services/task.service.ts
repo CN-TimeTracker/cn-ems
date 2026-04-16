@@ -245,6 +245,25 @@ export class TaskService {
   }
 
   /**
+   * Stops all running tasks for a specific user.
+   * Useful for auto-stopping tasks upon punch-out (end of day).
+   */
+  async stopAllRunningTasks(userId: string): Promise<void> {
+    const runningTasks = await Task.find({ 
+      assignedTo: userId, 
+      isRunning: true
+    });
+
+    for (const task of runningTasks) {
+      try {
+        await this.stopTimer(task._id.toString(), userId);
+      } catch (err) {
+        console.error(`[TaskService] Failed to auto-stop task ${task._id} on auto-action:`, err);
+      }
+    }
+  }
+
+  /**
    * Stops the timer, accumulates time, and marks task as Done.
    */
   async stopTimer(taskId: string, userId: string): Promise<ITask> {
