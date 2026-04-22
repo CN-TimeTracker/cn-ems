@@ -18,20 +18,48 @@ import { TimeService } from './time.service';
 export class TaskService {
   /**
    * Creates and assigns a task.
-   * Validates that the referenced project and user both exist before creating.
+   * Validates project existence, prevents duplicates for the same day, and handles auto-timer.
    */
   async createTask(input: ICreateTaskInput, createdBy: string): Promise<ITask> {
     // Guard: project must exist
     const project = await Project.findById(input.projectId);
     if (!project) throw new Error('Project not found');
 
-    // Removed assignedTo check because it is handled by the controller using req.user.id
+    // ── Duplicate Check ─────────────────────────────────────────────
+    // Prevent duplicate logs for same Project, User, WorkType & Status on the same day
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const tonight = new Date(today);
+    tonight.setUTCHours(23, 59, 59, 999);
 
-    const task = await Task.create({ ...input, createdBy });
+    const existing = await Task.findOne({
+      projectId: input.projectId,
+      assignedTo: createdBy,
+      workType: input.workType,
+      status: input.status,
+      date: { $gte: today, $lte: tonight }
+    });
+
+    if (existing) {
+      throw new Error(`A task with status "${input.status}" and work type "${input.workType}" already exists for this project today.`);
+    }
+
+    // ── Create Task ──────────────────────────────────────────────────
+    const task = await Task.create({ 
+      ...input, 
+      createdBy,
+      assignedTo: createdBy,
+      isRunning: false, // will be set by startTimer if applicable
+      date: today, // Ensure it's marked as today
+      time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })
+    });
     
-    // Auto-start the timer upon creation for the assigned user
-    // (createdBy and assignedTo are the same in this flow)
-    return this.startTimer(task._id.toString(), createdBy);
+    // Auto-start the timer ONLY if status is 'Currently Working'
+    if (input.status === TaskStatus.CurrentlyWorking) {
+      return this.startTimer(task._id.toString(), createdBy);
+    }
+
+    return this._populate(task._id.toString());
   }
 
   /**

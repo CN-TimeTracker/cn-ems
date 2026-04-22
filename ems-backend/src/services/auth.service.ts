@@ -58,8 +58,8 @@ export class AuthService {
    * Throws a plain Error with a message on failure — controller decides HTTP status.
    */
   async login(input: ILoginInput): Promise<ILoginResult> {
-    const email = input.email.toLowerCase();
-    const { password } = input;
+    const email = input.email.trim().toLowerCase();
+    const password = input.password;
 
     // .select('+password') because password field has select:false on the schema
     const user = await User.findOne({ email }).select('+password');
@@ -107,10 +107,11 @@ export class AuthService {
 
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
-      throw new AppError('Incorrect current password', 401);
+      throw new AppError('enter the correct current password', 400);
     }
 
     user.password = newPassword;
+    user.markModified('password');
     await user.save();
   }
 }

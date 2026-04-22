@@ -84,7 +84,7 @@ export class ProjectService {
    */
   async getAssignedProjects(userId: string): Promise<IProject[]> {
     return Project.find({ 
-      assignedTo: new (await import('mongoose')).default.Types.ObjectId(userId),
+      assignedTo: userId,
       status: ProjectStatus.Active 
     })
       .populate('assignedTo', 'name email')
@@ -92,26 +92,63 @@ export class ProjectService {
   }
 
   /**
-   * Calculates remaining hours for a project.
+   * Calculates remaining hours for a project and provides a breakdown by user.
    */
   async getProjectRemainingHours(projectId: string): Promise<{
     allocated: number;
     spent: number;
     remaining: number;
+    userBreakdown: any[];
   }> {
     const project = await Project.findById(projectId);
     if (!project) throw new Error('Project not found');
 
     const Task = (await import('../models/Task.model')).default;
-    const tasks = await Task.find({ projectId });
+    const tasks = await Task.find({ projectId }).populate('assignedTo', 'name role');
     
     const totalMinutesSpent = tasks.reduce((sum, t) => sum + (t.totalMinutesSpent || 0), 0);
     const totalHoursSpent = totalMinutesSpent / 60;
     
+    // Group breakdown by user
+    const userMap: Record<string, any> = {};
+    
+    tasks.forEach(task => {
+      const u = task.assignedTo as any;
+      if (!u) return;
+      const uid = u._id.toString();
+      
+      if (!userMap[uid]) {
+        userMap[uid] = {
+          userId: uid,
+          name: u.name,
+          role: u.role,
+          totalHours: 0,
+          tasks: []
+        };
+      }
+      
+      const taskHours = (task.totalMinutesSpent || 0) / 60;
+      userMap[uid].totalHours += taskHours;
+      userMap[uid].tasks.push({
+        taskId: task._id,
+        title: task.workType, // Using workType as title per user preference
+        description: task.description,
+        hours: taskHours,
+        status: task.status,
+        date: task.date
+      });
+    });
+
+    const userBreakdown = Object.values(userMap).map(u => ({
+      ...u,
+      totalHours: parseFloat(u.totalHours.toFixed(2))
+    }));
+
     return {
       allocated: project.allocatedHours || 0,
       spent: parseFloat(totalHoursSpent.toFixed(2)),
-      remaining: parseFloat(((project.allocatedHours || 0) - totalHoursSpent).toFixed(2))
+      remaining: parseFloat(((project.allocatedHours || 0) - totalHoursSpent).toFixed(2)),
+      userBreakdown
     };
   }
 

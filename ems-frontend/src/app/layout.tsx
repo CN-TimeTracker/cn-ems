@@ -8,6 +8,10 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Code Neptune EMS',
   description: 'Employee Management System — Code Neptune Technologies',
+  icons: {
+    icon: '/cn-favicon.ico',
+    shortcut: '/cn-favicon.ico',
+  },
 };
 
 export default function RootLayout({

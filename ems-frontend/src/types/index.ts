@@ -430,6 +430,11 @@ export interface AdminDashboardData {
   usersWithNoTasks: User[];
 }
 
+export interface HolidaySimple {
+  name: string;
+  date: string;
+}
+
 export interface EmployeeDashboardData {
   todaysTasks: Task[];
   todaysLoggedHours: number;
@@ -447,6 +452,11 @@ export interface EmployeeDashboardData {
     workedHours: number;
     deadline: string;
   }[];
+  upcomingHolidays: HolidaySimple[];
+  salaryStatus: {
+    month: string;
+    status: 'Verified' | 'Processing';
+  } | null;
 }
 
 // ─────────────────────────────────────────────
@@ -523,4 +533,22 @@ export interface Toast {
 export interface UiState {
   sidebarOpen: boolean;
   toasts: Toast[];
+}
+
+// ─────────────────────────────────────────────
+// QUOTE
+// ─────────────────────────────────────────────
+
+export interface Quote {
+  _id: string;
+  text: string;
+  author: string;
+  lastShownDate: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface CreateQuoteInput {
+  text: string;
+  author: string;
 }

@@ -22,6 +22,7 @@ import profileRoutes    from './routes/profile.routes';
 import payslipRoutes    from './routes/payslip.routes';
 import eventRoutes      from './routes/event.routes';
 import holidayRoutes    from './routes/holiday.routes';
+import quoteRoutes      from './routes/quote.routes';
 import { CronService }  from './services/cron.service';
 import { TimeService }  from './services/time.service';
 
@@ -45,7 +46,7 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: [process.env.FRONTEND_URL || 'http://localhost:3000', 'http://localhost:3001'],
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -113,6 +114,7 @@ app.use('/api/v1/profile',    profileRoutes);
 app.use('/api/v1/payslips',   payslipRoutes);
 app.use('/api/v1/events',     eventRoutes);
 app.use('/api/v1/holidays',   holidayRoutes);
+app.use('/api/v1/quotes',     quoteRoutes);
 
 // ─────────────────────────────────────────────
 // ERROR HANDLING (must be last)

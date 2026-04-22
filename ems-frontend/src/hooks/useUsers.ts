@@ -23,11 +23,12 @@ export const useAllUsers = () => {
 // Used in task assignment dropdowns
 // ─────────────────────────────────────────────
 
-export const useActiveEmployees = () => {
+export const useActiveEmployees = (enabled = true) => {
   return useQuery({
     queryKey: queryKeys.users.active(),
     queryFn:  () => UserService.getActiveEmployees(),
     staleTime: 1000 * 60 * 5,
+    enabled
   });
 };
 

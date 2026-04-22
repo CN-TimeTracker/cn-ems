@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
+import Logo from '@/asserts/cn_logo.webp';
 
 interface PayslipDocumentProps {
   data: {
@@ -55,9 +57,12 @@ export default function PayslipDocument({ data }: PayslipDocumentProps) {
       {/* Header */}
       <div className="flex justify-between items-start border-b-0 pb-4 mb-4">
         <div className="flex items-center gap-2">
-           <div className="flex flex-col">
-              <span className="text-3xl font-black tracking-tighter text-orange-600">CODE<span className="text-[#0D1B3E]">NEPTUNE</span></span>
-           </div>
+            <Image 
+              src={Logo} 
+              alt="Code Neptune Logo" 
+              className="h-12 w-auto object-contain"
+              priority
+            />
         </div>
         <div className="text-right text-[10px] text-gray-600">
           <p className="font-bold text-[#3B82F6]">CODE NEPTUNE TECHNOLOGIES PRIVATE LIMITED</p>
@@ -243,7 +248,7 @@ export default function PayslipDocument({ data }: PayslipDocumentProps) {
             width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-          }
+            }
           #printable-payslip {
             padding: 15mm !important;
             background: white !important;

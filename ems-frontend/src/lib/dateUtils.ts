@@ -44,3 +44,19 @@ export function parseAppDate(dateStr: string): Date | null {
   const d = new Date(year, month - 1, day);
   return isNaN(d.getTime()) ? null : d;
 }
+
+/**
+ * Formats decimal hours (e.g., 0.2) into a human-readable string (e.g., "0h 12m").
+ * 
+ * @param hours - Decimal hours to format
+ * @returns Formatted string
+ */
+export function formatDecimalHours(hours: number | string): string {
+  const hNum = typeof hours === 'string' ? parseFloat(hours) : hours;
+  if (isNaN(hNum)) return '0h 0m';
+  
+  const h = Math.floor(hNum);
+  const m = Math.round((hNum - h) * 60);
+  
+  return `${h}h ${m}m`;
+}

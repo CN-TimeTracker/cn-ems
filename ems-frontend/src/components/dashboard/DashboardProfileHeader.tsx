@@ -1,19 +1,15 @@
 'use client';
 
-import Link from 'next/link';
-
 import { User } from '@/types';
 import { 
   Mail, 
   Phone, 
-  Calendar, 
-  User as UserIcon,
-  Layers,
-  ClipboardCheck,
-  CalendarDays
+  Quote as QuoteIcon
 } from 'lucide-react';
 import { formatAppDate } from '@/lib/dateUtils';
 import Image from 'next/image';
+import { useQuery } from '@tanstack/react-query';
+import QuoteService from '@/services/quote.service';
 
 interface DashboardProfileHeaderProps {
   user: User;
@@ -24,141 +20,97 @@ interface DashboardProfileHeaderProps {
   };
 }
 
-export default function DashboardProfileHeader({ user, stats }: DashboardProfileHeaderProps) {
-  const formattedDob = formatAppDate(user.dateOfBirth);
-
+export default function DashboardProfileHeader({ user }: DashboardProfileHeaderProps) {
   return (
-    <div className="space-y-4">
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
-        <div className="flex flex-col lg:flex-col h-full">
-          {/* Left: Profile Info */}
-          <div className="flex-1 p-8 flex flex-col md:flex-row gap-8 border-b lg:border-b-0 lg:border-r border-gray-100 bg-gradient-to-br from-white to-gray-50/50">
-            {/* Avatar Container */}
-            <div className="relative group shrink-0">
-              <div className="w-40 h-40 rounded-2xl overflow-hidden bg-brand-50 border-4 border-white shadow-lg relative">
-                {user.profilePicture ? (
-                  <Image 
-                    src={user.profilePicture} 
-                    alt={user.name} 
-                    fill 
-                    className="object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-brand-100 text-brand-600 font-bold text-5xl">
-                    {user.name.charAt(0)}
-                  </div>
-                )}
+    <div className="relative bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden mb-4 group">
+      {/* Decorative Gradient Accent */}
+      <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-brand-50/50 to-transparent pointer-events-none" />
+      
+      <div className="relative flex flex-col md:flex-row items-center gap-6 p-5">
+        {/* Profile Image with Ring Detail */}
+        <div className="relative shrink-0">
+          <div className="w-20 h-20 rounded-2xl overflow-hidden bg-white p-1 shadow-md ring-1 ring-brand-100/50 relative group-hover:scale-105 transition-transform duration-500">
+            {user.profilePicture ? (
+              <Image 
+                src={user.profilePicture} 
+                alt={user.name} 
+                fill 
+                className="object-cover rounded-xl"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-500 to-indigo-600 text-white font-black text-3xl rounded-xl">
+                {user.name.charAt(0)}
               </div>
-              <div className="absolute -bottom-2 -right-2 bg-green-500 w-6 h-6 rounded-full border-4 border-white" />
-            </div>
+            )}
+          </div>
+          <div className="absolute -bottom-1 -right-1 bg-emerald-500 w-5 h-5 rounded-full border-[3px] border-white shadow-lg" />
+        </div>
 
-            {/* User Details */}
-            <div className="flex-1 py-1">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
-                    {user.name}
-                    <span className="text-sm font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full uppercase tracking-widest bg-white shadow-sm border border-gray-100">
-                      {user.role}
-                    </span>
-                  </h1>
-                </div>
-                <div className="hidden md:flex items-center gap-2 bg-brand-50 text-brand-700 px-4 py-2 rounded-2xl border border-brand-100">
-                  <UserIcon className="w-4 h-4" />
-                  <span className="font-bold tracking-tight">{user.employeeCode || 'EMP-XXXX'}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
-                <div className="flex items-center gap-3 group">
-                  <div className="bg-white p-2.5 rounded-xl text-brand-500 shadow-sm border border-gray-100 group-hover:bg-brand-500 group-hover:text-white transition-all">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Email Address</p>
-                    <p className="text-sm font-semibold text-gray-700 truncate">{user.email}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 group">
-                  <div className="bg-white p-2.5 rounded-xl text-brand-500 shadow-sm border border-gray-100 group-hover:bg-brand-500 group-hover:text-white transition-all">
-                    <Phone className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Phone Number</p>
-                    <p className="text-sm font-semibold text-gray-700">{user.phoneNumber || 'Not provided'}</p>
-                  </div>
-                </div>
-
-                {formattedDob && (
-                  <div className="flex items-center gap-3 group">
-                    <div className="bg-white p-2.5 rounded-xl text-brand-500 shadow-sm border border-gray-100 group-hover:bg-brand-500 group-hover:text-white transition-all">
-                      <Calendar className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Date of Birth</p>
-                      <p className="text-sm font-semibold text-gray-700">{formattedDob}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+        {/* User Info & Expanded Details */}
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-3 mb-2">
+            <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+              {user.name}
+            </h1>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black text-brand-600 bg-brand-50/80 backdrop-blur-sm px-3 py-1 rounded-full uppercase tracking-widest border border-brand-100/50 shadow-sm">
+                {user.role}
+              </span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
+                {user.employeeCode}
+              </span>
             </div>
           </div>
+          
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-2 text-gray-500 mb-4 px-1">
+            <div className="flex items-center gap-2 group/text cursor-default">
+              <div className="p-1.5 bg-gray-50 rounded-lg group-hover/text:bg-brand-50 transition-colors">
+                <Mail className="w-3.5 h-3.5 text-brand-400" />
+              </div>
+              <span className="text-xs font-semibold tracking-tight group-hover/text:text-gray-900 transition-colors">{user.email}</span>
+            </div>
+            {user.phoneNumber && (
+              <div className="flex items-center gap-2 group/text cursor-default">
+                <div className="p-1.5 bg-gray-50 rounded-lg group-hover/text:bg-brand-50 transition-colors">
+                  <Phone className="w-3.5 h-3.5 text-brand-400" />
+                </div>
+                <span className="text-xs font-semibold tracking-tight group-hover/text:text-gray-900 transition-colors">{user.phoneNumber}</span>
+              </div>
+            )}
+          </div>
 
-          {/* Right: Stats Grid */}
-          <div className="w-full flex flex-col divide-y divide-gray-100 bg-gray-50/30">
-  <div className="flex w-full gap-4 p-8">
-
-    <Link href="/projects" className="flex-1">
-      <StatItem 
-        icon={Layers} 
-        label="TOTAL PROJECTS" 
-        value={stats.totalProjects} 
-        color="blue"
-      />
-    </Link>
-
-    <Link href="/tasks" className="flex-1">
-      <StatItem 
-        icon={ClipboardCheck} 
-        label="ACTIVE TASKS" 
-        value={stats.todayTasks} 
-        color="teal"
-      />
-    </Link>
-
-    <Link href="/leaves" className="flex-1">
-      <StatItem 
-        icon={CalendarDays} 
-        label="TOTAL LEAVE" 
-        value={stats.totalLeaves} 
-        color="purple"
-      />
-    </Link>
-
-  </div>
-</div>
+          <div className="max-w-3xl">
+            <DailyQuote />
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function StatItem({ icon: Icon, label, value, color }: { icon: any, label: string, value: number, color: 'blue' | 'teal' | 'purple' }) {
-  const colors = {
-    blue: 'bg-blue-500 shadow-blue-500/20',
-    teal: 'bg-teal-500 shadow-teal-500/20',
-    purple: 'bg-purple-500 shadow-purple-500/20'
-  };
+function DailyQuote() {
+  const { data: quote, isLoading } = useQuery({
+    queryKey: ['daily-quote'],
+    queryFn: QuoteService.getDailyQuote,
+    staleTime: 1000 * 60 * 60, // 1 hour
+  });
+
+  if (isLoading) return <div className="h-4 w-64 bg-gray-50 animate-pulse rounded-full" />;
+  if (!quote) return null;
 
   return (
-    <div className={`${colors[color]} flex-1 rounded-2xl p-4 text-white shadow-lg flex flex-col items-center justify-center text-center transform transition-all duration-300 hover:scale-105 group relative overflow-hidden`}>
-      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-        <Icon className="w-12 h-12" />
+    <div className="flex items-start gap-4 p-3 bg-gradient-to-r from-brand-50/30 to-white rounded-2xl border border-brand-50/50 group/quote hover:shadow-sm transition-all">
+      <div className="p-2 bg-white rounded-xl shadow-sm border border-brand-100 text-brand-400 group-hover/quote:text-brand-600 transition-colors">
+        <QuoteIcon className="w-3.5 h-3.5" />
       </div>
-      <Icon className="w-5 h-5 mb-3 opacity-80" />
-      <span className="text-[10px] font-bold uppercase tracking-[0.1em] mb-1 opacity-90">{label}</span>
-      <span className="text-3xl font-black">{value}</span>
+      <div className="min-w-0">
+        <p className="text-xs text-gray-600 italic leading-relaxed line-clamp-1 group-hover/quote:line-clamp-none transition-all">
+          "{quote.text}"
+        </p>
+        <p className="text-[10px] font-black text-brand-400 uppercase tracking-[0.2em] mt-1.5 opacity-60">
+          — {quote.author}
+        </p>
+      </div>
     </div>
   );
 }

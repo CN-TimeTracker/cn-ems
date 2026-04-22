@@ -91,11 +91,12 @@ UserSchema.index({ isActive: 1 });
 // ─────────────────────────────────────────────
 
 // Hash password before every save — only if it was modified
-UserSchema.pre('save', async function (next: (err?: Error) => void) {
-  if (!this.isModified('password')) return next();
+UserSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
+  
   const salt = await bcrypt.genSalt(12);
-  this.password = await bcrypt.hash(this.password as string, salt);
-  next();
+  const hashedPassword = await bcrypt.hash(this.password as string, salt);
+  this.password = hashedPassword;
 });
 
 // ─────────────────────────────────────────────

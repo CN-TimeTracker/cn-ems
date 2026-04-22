@@ -13,9 +13,12 @@ import {
   TaskStatus,
   LeaveStatus,
   ProjectStatus,
+  IHolidaySimple,
 } from '../interfaces';
 import { getISTMidnight } from '../utils/dateUtils';
 import { AttendanceService } from './attendance.service';
+import Holiday from '../models/Holiday.model';
+import SalaryRecord from '../models/SalaryRecord.model';
 
 // ─────────────────────────────────────────────
 // HELPER
@@ -67,7 +70,14 @@ export class DashboardService {
 
     // ── 1. Who punched in today ──────────────────────────────────────────
     const todayRecords = await Attendance.find({ date: today }).lean();
-    const loggedSet = new Set(todayRecords.map(r => r.userId.toString()));
+    
+    // Filter to only count Staff (non-admins) who punched in
+    const staffIds = new Set(allUsers.filter(u => u.role !== UserRole.Admin).map(u => u._id.toString()));
+    const loggedSet = new Set(
+      todayRecords
+        .map(r => r.userId.toString())
+        .filter(id => staffIds.has(id))
+    );
 
     // ── 2. Who has approved leave today ───────────────────────────────────
     const onLeaveToday = await Leave.distinct('userId', {
@@ -88,25 +98,28 @@ export class DashboardService {
       .map(toPublic);
 
     // ── 4. & 5. Users who logged but less than 4 hours & Total Hours ───────
-    const attendanceService = new AttendanceService();
-    let totalHoursToday = 0;
+    // Standardizing to Task Hours (WorkLogs)
     const usersUnder4Hours: IAdminDashboardData['usersUnder4Hours'] = [];
+    
+    // Get total task hours for everyone today
+    const totalTaskHoursAgg = await WorkLog.aggregate([
+      { $match: { date: { $gte: today, $lt: tomorrow } } },
+      { $group: { _id: null, total: { $sum: '$hours' } } }
+    ]);
+    const totalHoursToday = totalTaskHoursAgg[0]?.total || 0;
 
-    for (const record of todayRecords) {
-      // Exclude Admin from under 4 hours stats typically? Wait, previously allUsers excluded Admin.
-      // Yes, in point 3 admin is excluded, but allUsers already fetched active users. I will just check allUsers.
-      const u = allUsers.find(user => user._id.toString() === record.userId.toString() && user.role !== UserRole.Admin);
-      if (!u) continue;
-      
-      const liveMs = attendanceService.calculateLiveWorkMs(record);
-      // Let's not fix(2) strictly to lose precision here for addition, just standard sum.
-      // E.g., if we want to display properly, UI rounds it anyway.
-      const totalHours = liveMs / (1000 * 60 * 60);
-      
-      totalHoursToday += totalHours;
-      
-      if (totalHours < 4) {
-        usersUnder4Hours.push({ user: toPublic(u), totalHours: Number(totalHours.toFixed(2)) });
+    // Users with less than 4 hours logged on tasks
+    const userHoursToday = await WorkLog.aggregate([
+      { $match: { date: { $gte: today, $lt: tomorrow } } },
+      { $group: { _id: '$userId', total: { $sum: '$hours' } } }
+    ]);
+
+    for (const entry of userHoursToday) {
+      if (entry.total < 4) {
+        const u = allUsers.find(user => user._id.toString() === entry._id.toString() && user.role !== UserRole.Admin);
+        if (u) {
+          usersUnder4Hours.push({ user: toPublic(u), totalHours: Number(entry.total.toFixed(2)) });
+        }
       }
     }
 
@@ -171,7 +184,9 @@ export class DashboardService {
       todayAttendance,
       totalProjects,
       totalLeaves,
-      projectWorkLogs
+      projectWorkLogs,
+      upcomingHolidays,
+      salaryConfig
     ] = await Promise.all([
       Task.find({
         assignedTo: userObjectId,
@@ -197,7 +212,15 @@ export class DashboardService {
         { $group: { _id: '$projectId', workedHours: { $sum: '$hours' } } },
         { $lookup: { from: 'projects', localField: '_id', foreignField: '_id', as: 'p' } },
         { $unwind: '$p' }
-      ])
+      ]),
+
+      Holiday.find({ date: { $gte: today } }).sort({ date: 1 }).limit(3).lean(),
+
+      SalaryRecord.findOne({
+        userId: userObjectId,
+        month: today.getUTCMonth() + 1,
+        year: today.getUTCFullYear()
+      }).lean()
     ]);
 
     const projectBreakdown = projectWorkLogs.map((pw: any) => ({
@@ -210,8 +233,13 @@ export class DashboardService {
       deadline: pw.p.deadline
     }));
 
-    const attendanceService = new AttendanceService();
-    const todaysLoggedHours = todayAttendance ? attendanceService.calculateLiveWorkMs(todayAttendance) / (1000 * 60 * 60) : 0;
+    const todaysLoggedHoursAgg = await WorkLog.aggregate([
+      { $match: { userId: userObjectId, date: { $gte: today, $lt: tomorrow } } },
+      { $group: { _id: null, total: { $sum: '$hours' } } }
+    ]);
+    const todaysLoggedHours = todaysLoggedHoursAgg[0]?.total || 0;
+
+    const currentMonthName = today.toLocaleString('default', { month: 'long' });
 
     return {
       todaysTasks: todaysTasks as any,
@@ -221,7 +249,12 @@ export class DashboardService {
       todayAttendance: todayAttendance as any,
       totalProjects,
       totalLeaves,
-      projectBreakdown
+      projectBreakdown,
+      upcomingHolidays: upcomingHolidays.map(h => ({ name: h.name, date: h.date })),
+      salaryStatus: {
+        month: currentMonthName,
+        status: salaryConfig?.isApproved ? 'Verified' : 'Processing'
+      }
     };
   }
 

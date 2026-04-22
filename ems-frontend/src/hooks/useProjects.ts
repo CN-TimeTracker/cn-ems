@@ -11,10 +11,11 @@ import { CreateProjectInput, UpdateProjectInput } from '../types';
 // useAllProjects      [Protected]
 // ─────────────────────────────────────────────
 
-export const useAllProjects = () => {
+export const useAllProjects = (enabled = true) => {
   return useQuery({
     queryKey: queryKeys.projects.all(),
     queryFn:  () => ProjectService.getAllProjects(),
+    enabled
   });
 };
 
@@ -120,10 +121,11 @@ export const useDeleteProject = () => {
 // Timer & Assignment hooks
 // ─────────────────────────────────────────────
 
-export const useAssignedProjects = () => {
+export const useAssignedProjects = (enabled = true) => {
   return useQuery({
     queryKey: queryKeys.projects.assigned(),
     queryFn:  () => ProjectService.getAssignedProjects(),
+    enabled
   });
 };
 

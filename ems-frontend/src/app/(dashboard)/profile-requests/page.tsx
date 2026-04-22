@@ -9,7 +9,8 @@ import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
 import { UserRole, ProfileUpdateRequestStatus } from '@/types';
 import { useRouter } from 'next/navigation';
-import { Check, X, FileLock2, History, RotateCcw } from 'lucide-react';
+import { Check, X, FileLock2, History, RotateCcw, ShieldAlert } from 'lucide-react';
+import Modal from '@/components/ui/Modal';
 import { useDispatch } from 'react-redux';
 import { addToast } from '@/store/uiSlice';
 import { formatAppDate } from '@/lib/dateUtils';
@@ -21,6 +22,7 @@ export default function ProfileApprovalsPage() {
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
+  const [rejectingItem, setRejectingItem] = useState<{ id: string, name: string } | null>(null);
 
   if (currentUser && currentUser.role !== UserRole.Admin) {
     router.replace('/dashboard');
@@ -74,14 +76,17 @@ export default function ProfileApprovalsPage() {
   const currentItems = activeTab === 'pending' ? (requests || []) : (history || []);
 
   const handleApprove = (id: string, name: string) => {
-    if (confirm(`Approve profile updates for ${name}?`)) {
-      approveMut.mutate(id);
-    }
+    approveMut.mutate(id);
   };
 
   const handleReject = (id: string, name: string) => {
-    if (confirm(`Reject profile updates for ${name}?`)) {
-      rejectMut.mutate(id);
+    setRejectingItem({ id, name });
+  };
+
+  const confirmReject = () => {
+    if (rejectingItem) {
+      rejectMut.mutate(rejectingItem.id);
+      setRejectingItem(null);
     }
   };
 
@@ -267,6 +272,42 @@ export default function ProfileApprovalsPage() {
           ))}
         </div>
       )}
+      {/* Reject Confirmation Modal */}
+      <Modal 
+        open={!!rejectingItem} 
+        onClose={() => setRejectingItem(null)}
+        title="Reject Profile Updates"
+      >
+        <div className="p-6 space-y-4">
+          <div className="flex items-center gap-4 p-4 bg-red-50 rounded-2xl border border-red-100">
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+              <ShieldAlert className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h4 className="font-bold text-red-900">Confirm Rejection</h4>
+              <p className="text-sm text-red-700">Are you sure you want to reject the profile updates for <strong>{rejectingItem?.name}</strong>? This action will ignore all requested changes.</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-2">
+            <button 
+              onClick={confirmReject}
+              disabled={rejectMut.isPending}
+              className="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-100 flex items-center justify-center gap-2"
+            >
+              {rejectMut.isPending ? <Spinner size="sm" /> : <X className="w-4 h-4" />}
+              Reject & Ignore Changes
+            </button>
+            <button 
+              onClick={() => setRejectingItem(null)}
+              className="w-full py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-all font-bold"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 }

@@ -19,12 +19,24 @@ module.exports = {
           800: '#3730a3',
           900: '#312e81',
         },
+        core: {
+          bg: '#F8F9FA',
+          title: '#1A2B48',
+          accent: '#2563EB',
+          muted: '#8A92A6',
+          border: '#E9ECEF',
+        }
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
+      borderRadius: {
+        '3xl': '1.5rem',
+        '4xl': '2rem',
+      },
       boxShadow: {
-        card: '0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.07)',
+        card: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.01)',
+        'premium': '0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02)',
       },
     },
   },
