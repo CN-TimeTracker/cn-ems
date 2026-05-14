@@ -26,12 +26,13 @@ export declare class ProjectService {
      */
     getAssignedProjects(userId: string): Promise<IProject[]>;
     /**
-     * Calculates remaining hours for a project.
+     * Calculates remaining hours for a project and provides a breakdown by user.
      */
     getProjectRemainingHours(projectId: string): Promise<{
         allocated: number;
         spent: number;
         remaining: number;
+        userBreakdown: any[];
     }>;
     /**
      * Admin can update any project field, including marking it Completed.

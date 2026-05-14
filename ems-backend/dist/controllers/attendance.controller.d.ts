@@ -6,4 +6,5 @@ export declare const endBreak: (req: import("express").Request, res: Response, n
 export declare const getMyToday: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const updateLateReason: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getAdminTodayView: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getAdminAllAttendanceHistory: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 //# sourceMappingURL=attendance.controller.d.ts.map

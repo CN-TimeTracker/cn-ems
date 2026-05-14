@@ -371,12 +371,16 @@ export interface IAdminDashboardData {
     totalHoursToday: number;
     usersWithNoTasks: IUserPublic[];
 }
+export interface IHolidaySimple {
+    name: string;
+    date: Date;
+}
 export interface IEmployeeDashboardData {
-    todaysTasks: ITask[];
+    todaysTasks: any[];
     todaysLoggedHours: number;
-    pendingTasks: ITask[];
-    recentLogs: IWorkLog[];
-    todayAttendance?: IAttendance;
+    pendingTasks: any[];
+    recentLogs: any[];
+    todayAttendance: any;
     totalProjects: number;
     totalLeaves: number;
     projectBreakdown: {
@@ -388,6 +392,11 @@ export interface IEmployeeDashboardData {
         workedHours: number;
         deadline: Date;
     }[];
+    upcomingHolidays: IHolidaySimple[];
+    salaryStatus: {
+        month: string;
+        status: 'Verified' | 'Processing';
+    } | null;
 }
 export interface IPayslip extends Document {
     _id: Types.ObjectId;

@@ -1,0 +1,1 @@
+{"version":3,"file":"time.service.d.ts","sourceRoot":"","sources":["../../src/services/time.service.ts"],"names":[],"mappings":"AAAA,cAAM,gBAAgB;IACpB,OAAO,CAAC,gBAAgB,CAAuB;IAC/C,OAAO,CAAC,mBAAmB,CAAuB;IAClD,OAAO,CAAC,cAAc,CAAS;IAElB,IAAI,IAAI,OAAO,CAAC,IAAI,CAAC;IA+BlC;;;OAGG;IACI,GAAG,IAAI,IAAI;IAQlB;;OAEG;IACI,KAAK,IAAI,MAAM;CAGvB;AAED,eAAO,MAAM,WAAW,kBAAyB,CAAC"}

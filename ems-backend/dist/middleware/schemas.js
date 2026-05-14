@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.reviewLeaveSchema = exports.createLeaveSchema = exports.createWorkLogSchema = exports.updateTaskSchema = exports.createTaskSchema = exports.updateProjectSchema = exports.createProjectSchema = exports.updateUserSchema = exports.createUserSchema = exports.loginSchema = void 0;
 const zod_1 = require("zod");
 const interfaces_1 = require("../interfaces");
+const services_1 = require("../services");
 // ─────────────────────────────────────────────
 // AUTH
 // ─────────────────────────────────────────────
@@ -128,18 +129,18 @@ exports.createWorkLogSchema = zod_1.z.object({
 exports.createLeaveSchema = zod_1.z.object({
     startDate: zod_1.z.string().refine((d) => !isNaN(Date.parse(d)), 'Invalid start date'),
     endDate: zod_1.z.string().refine((d) => !isNaN(Date.parse(d)), 'Invalid end date'),
-    reason: zod_1.z.string().min(5, 'Please provide a reason').max(500),
+    reason: zod_1.z.string().min(1, 'Please provide a reason').max(500),
     leaveType: zod_1.z.nativeEnum(interfaces_1.LeaveType),
     duration: zod_1.z.nativeEnum(interfaces_1.LeaveDuration),
     halfDayType: zod_1.z.nativeEnum(interfaces_1.HalfDayType).optional(),
 }).superRefine((data, ctx) => {
     if (data.leaveType === interfaces_1.LeaveType.Casual) {
-        const today = new Date();
+        const today = services_1.TimeService.now();
         const minDate = new Date(today);
         minDate.setDate(today.getDate() + 5);
-        // Create standard YYYY-MM-DD comparisons
+        // Create standard YYYY-MM-DD comparisons for safety
         const minStr = minDate.toISOString().split('T')[0];
-        const startStr = data.startDate;
+        const startStr = data.startDate; // Already yyyy-mm-dd from frontend
         if (startStr < minStr) {
             ctx.addIssue({
                 code: zod_1.z.ZodIssueCode.custom,

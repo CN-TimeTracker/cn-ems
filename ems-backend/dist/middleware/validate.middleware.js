@@ -17,9 +17,11 @@ const validate = (schema) => (req, res, next) => {
                 field: e.path.join('.'),
                 message: e.message,
             }));
+            // Use the first error message as the primary message for toasts
+            const primaryMessage = errors.length > 0 ? errors[0].message : 'Validation failed';
             res.status(400).json({
                 success: false,
-                message: 'Validation failed',
+                message: primaryMessage,
                 errors,
             });
             return;

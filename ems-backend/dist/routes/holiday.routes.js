@@ -9,6 +9,7 @@ const router = (0, express_1.Router)();
 router.get('/', auth_middleware_1.protect, holiday_controller_1.getAllHolidays);
 // Adding and deleting holidays is restricted to Admin
 router.post('/', auth_middleware_1.protect, (0, auth_middleware_1.roleGuard)(interfaces_1.UserRole.Admin), holiday_controller_1.addHoliday);
+router.patch('/:id', auth_middleware_1.protect, (0, auth_middleware_1.roleGuard)(interfaces_1.UserRole.Admin), holiday_controller_1.updateHoliday);
 router.delete('/:id', auth_middleware_1.protect, (0, auth_middleware_1.roleGuard)(interfaces_1.UserRole.Admin), holiday_controller_1.deleteHoliday);
 exports.default = router;
 //# sourceMappingURL=holiday.routes.js.map

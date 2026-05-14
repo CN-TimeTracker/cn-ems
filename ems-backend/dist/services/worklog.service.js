@@ -40,6 +40,8 @@ exports.WorkLogService = void 0;
 const WorkLog_model_1 = __importDefault(require("../models/WorkLog.model"));
 const Task_model_1 = __importDefault(require("../models/Task.model"));
 const Leave_model_1 = __importDefault(require("../models/Leave.model"));
+const Attendance_model_1 = __importDefault(require("../models/Attendance.model"));
+const attendance_service_1 = require("./attendance.service");
 const interfaces_1 = require("../interfaces");
 // ─────────────────────────────────────────────
 // HELPER — normalize date to midnight UTC
@@ -126,7 +128,7 @@ class WorkLogService {
         }
         return WorkLog_model_1.default.find(query)
             .populate('projectId', 'name clientName')
-            .populate('taskId', 'title status')
+            .populate('taskId', 'workType description status')
             .sort({ date: -1 });
     }
     /**
@@ -148,7 +150,7 @@ class WorkLogService {
         return WorkLog_model_1.default.find(query)
             .populate('userId', 'name email role')
             .populate('projectId', 'name clientName')
-            .populate('taskId', 'title status')
+            .populate('taskId', 'workType description status')
             .sort({ date: -1 });
     }
     /**
@@ -157,18 +159,17 @@ class WorkLogService {
      */
     async getTodayHoursForUser(userId, date) {
         const logDate = toMidnightUTC(date ?? new Date());
-        const nextDay = new Date(logDate);
-        nextDay.setUTCDate(nextDay.getUTCDate() + 1);
-        const result = await WorkLog_model_1.default.aggregate([
-            {
-                $match: {
-                    userId: (await Promise.resolve().then(() => __importStar(require('mongoose')))).default.Types.ObjectId.createFromHexString(userId),
-                    date: { $gte: logDate, $lt: nextDay },
-                },
-            },
-            { $group: { _id: null, total: { $sum: '$hours' } } },
-        ]);
-        return result[0]?.total ?? 0;
+        const attendanceRecord = await Attendance_model_1.default.findOne({ userId, date: logDate }).lean();
+        if (!attendanceRecord)
+            return 0;
+        const attendanceService = new attendance_service_1.AttendanceService();
+        // If it's assessing today dynamically
+        if (!date || logDate.getTime() === toMidnightUTC(new Date()).getTime()) {
+            const liveMs = attendanceService.calculateLiveWorkMs(attendanceRecord);
+            return Number((liveMs / (1000 * 60 * 60)).toFixed(2));
+        }
+        // For retrospective dates
+        return Number(((attendanceRecord.totalWorkMs || 0) / (1000 * 60 * 60)).toFixed(2));
     }
     /**
      * Returns every user who has logged at least one entry today.
@@ -284,7 +285,7 @@ class WorkLogService {
         const log = await WorkLog_model_1.default.findById(id)
             .populate('userId', 'name email')
             .populate('projectId', 'name clientName')
-            .populate('taskId', 'title status deadline');
+            .populate('taskId', 'workType description status deadline');
         if (!log)
             throw new Error('Work log not found');
         return log;

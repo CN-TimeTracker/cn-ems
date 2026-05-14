@@ -259,6 +259,26 @@ export interface UpdateProjectInput {
   assignedTo?: string[];
 }
 
+export interface ProjectRemainingHours {
+  allocated: number;
+  spent: number;
+  remaining: number;
+  userBreakdown: {
+    userId: string;
+    name: string;
+    role: string;
+    totalHours: number;
+    tasks: {
+      taskId: string;
+      title: string;
+      description?: string;
+      hours: number;
+      status: string;
+      date: string;
+    }[];
+  }[];
+}
+
 // ─────────────────────────────────────────────
 // TASK
 // ─────────────────────────────────────────────

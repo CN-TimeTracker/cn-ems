@@ -8,24 +8,50 @@ const Task_model_1 = __importDefault(require("../models/Task.model"));
 const Project_model_1 = __importDefault(require("../models/Project.model"));
 const WorkLog_model_1 = __importDefault(require("../models/WorkLog.model"));
 const interfaces_1 = require("../interfaces");
+const time_service_1 = require("./time.service");
 // ─────────────────────────────────────────────
 // SERVICE
 // ─────────────────────────────────────────────
 class TaskService {
     /**
      * Creates and assigns a task.
-     * Validates that the referenced project and user both exist before creating.
+     * Validates project existence, prevents duplicates for the same day, and handles auto-timer.
      */
     async createTask(input, createdBy) {
         // Guard: project must exist
         const project = await Project_model_1.default.findById(input.projectId);
         if (!project)
             throw new Error('Project not found');
-        // Removed assignedTo check because it is handled by the controller using req.user.id
-        const task = await Task_model_1.default.create({ ...input, createdBy });
-        // Auto-start the timer upon creation for the assigned user
-        // (createdBy and assignedTo are the same in this flow)
-        return this.startTimer(task._id.toString(), createdBy);
+        // ── Duplicate Check ─────────────────────────────────────────────
+        // Prevent duplicate logs for same Project, User, WorkType & Status on the same day
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+        const tonight = new Date(today);
+        tonight.setUTCHours(23, 59, 59, 999);
+        const existing = await Task_model_1.default.findOne({
+            projectId: input.projectId,
+            assignedTo: createdBy,
+            workType: input.workType,
+            status: input.status,
+            date: { $gte: today, $lte: tonight }
+        });
+        if (existing) {
+            throw new Error(`A task with status "${input.status}" and work type "${input.workType}" already exists for this project today.`);
+        }
+        // ── Create Task ──────────────────────────────────────────────────
+        const task = await Task_model_1.default.create({
+            ...input,
+            createdBy,
+            assignedTo: createdBy,
+            isRunning: false, // will be set by startTimer if applicable
+            date: today, // Ensure it's marked as today
+            time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })
+        });
+        // Auto-start the timer ONLY if status is 'Currently Working'
+        if (input.status === interfaces_1.TaskStatus.CurrentlyWorking) {
+            return this.startTimer(task._id.toString(), createdBy);
+        }
+        return this._populate(task._id.toString());
     }
     /**
      * Filtered task list — supports combinations of projectId, assignedTo, status.
@@ -135,8 +161,15 @@ class TaskService {
         }
         // ── Start target task ─────────────────────────────────────────────
         task.isRunning = true;
-        task.lastStartedAt = new Date();
+        task.lastStartedAt = time_service_1.TimeService.now();
         task.status = interfaces_1.TaskStatus.CurrentlyWorking;
+        // Self-heal legacy tasks created before these fields were strictly required
+        if (!task.date)
+            task.date = time_service_1.TimeService.now();
+        if (!task.time)
+            task.time = '00:00';
+        if (!task.workType)
+            task.workType = 'General Task';
         await task.save();
         return this._populate(task._id.toString());
     }
@@ -151,41 +184,104 @@ class TaskService {
             throw new Error('Permission denied');
         }
         if (task.isRunning && task.lastStartedAt) {
-            const now = new Date();
+            const now = time_service_1.TimeService.now();
             const startTime = new Date(task.lastStartedAt);
             const elapsedMs = now.getTime() - startTime.getTime();
             const elapsedMins = elapsedMs / (1000 * 60);
             task.totalMinutesSpent = (task.totalMinutesSpent || 0) + elapsedMins;
             task.isRunning = false;
             task.lastStartedAt = null;
+            // Self-heal legacy tasks
+            if (!task.date)
+                task.date = time_service_1.TimeService.now();
+            if (!task.time)
+                task.time = '00:00';
+            if (!task.workType)
+                task.workType = 'General Task';
             await task.save();
             // Auto-log the session as worked hours on the project
-            const hours = elapsedMins / 60;
+            let hours = elapsedMins / 60;
+            if (hours > 10)
+                hours = 10; // Cap at 10 hours so we don't trip Mongoose max validation
             if (hours > 0) {
                 const logDate = new Date(now);
                 logDate.setUTCHours(0, 0, 0, 0);
-                await WorkLog_model_1.default.create({
-                    userId,
-                    projectId: task.projectId,
-                    taskId: task._id,
-                    hours: Number(hours.toFixed(4)),
-                    notes: `Auto-logged from timer (${task.workType || 'Session'})`,
-                    startTime,
-                    endTime: now,
-                    date: logDate
-                });
+                try {
+                    await WorkLog_model_1.default.create({
+                        userId,
+                        projectId: task.projectId,
+                        taskId: task._id,
+                        hours: Number(hours.toFixed(4)),
+                        notes: task.description || task.workType || 'General Task Session',
+                        startTime,
+                        endTime: now,
+                        date: logDate
+                    });
+                }
+                catch (e) {
+                    console.error(`[TaskService] Failed to auto-create worklog: ${e.message}`);
+                    // We swallow the error so that the task stop is successful regardless,
+                    // rather than throwing 400 Bad Request if they hit a random boundary condition.
+                }
             }
         }
         return this._populate(task._id.toString());
+    }
+    /**
+     * Pauses all running tasks for a specific user.
+     * Useful for auto-pausing tasks upon logout or midnight cron.
+     */
+    async pauseAllRunningTasks(userId) {
+        const runningTasks = await Task_model_1.default.find({
+            assignedTo: userId,
+            isRunning: true
+        });
+        for (const task of runningTasks) {
+            try {
+                await this.pauseTimer(task._id.toString(), userId);
+            }
+            catch (err) {
+                console.error(`[TaskService] Failed to auto-pause task ${task._id} on auto-action:`, err);
+            }
+        }
+    }
+    /**
+     * Stops all running tasks for a specific user.
+     * Useful for auto-stopping tasks upon punch-out (end of day).
+     */
+    async stopAllRunningTasks(userId) {
+        const runningTasks = await Task_model_1.default.find({
+            assignedTo: userId,
+            isRunning: true
+        });
+        for (const task of runningTasks) {
+            try {
+                await this.stopTimer(task._id.toString(), userId);
+            }
+            catch (err) {
+                console.error(`[TaskService] Failed to auto-stop task ${task._id} on auto-action:`, err);
+            }
+        }
     }
     /**
      * Stops the timer, accumulates time, and marks task as Done.
      */
     async stopTimer(taskId, userId) {
         const task = await this.pauseTimer(taskId, userId);
-        task.status = interfaces_1.TaskStatus.ProjectCompleted;
-        await task.save();
-        return this._populate(task._id.toString());
+        // We must re-fetch the raw document to save it, because pauseTimer returns a populated lean-like document
+        const rawTask = await Task_model_1.default.findById(taskId);
+        if (!rawTask)
+            throw new Error('Task not found');
+        rawTask.status = interfaces_1.TaskStatus.ProjectCompleted;
+        // Self-heal legacy tasks
+        if (!rawTask.date)
+            rawTask.date = time_service_1.TimeService.now();
+        if (!rawTask.time)
+            rawTask.time = '00:00';
+        if (!rawTask.workType)
+            rawTask.workType = 'General Task';
+        await rawTask.save();
+        return this._populate(rawTask._id.toString());
     }
     // ─── PRIVATE HELPERS ──────────────────────────────────────────────────────
     /** Centralized population to keep it DRY across all task queries */

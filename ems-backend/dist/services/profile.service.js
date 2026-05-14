@@ -35,7 +35,7 @@ class ProfileUpdateService {
     // ─────────────────────────────────────────────
     async getAllPendingRequests() {
         return ProfileUpdateRequest_model_1.default.find({ status: interfaces_1.ProfileUpdateRequestStatus.Pending })
-            .populate('userId', 'name email employeeCode profilePicture')
+            .populate('userId', 'name email employeeCode profilePicture username phoneNumber dateOfBirth gender fatherName currentAddress permanentAddress description')
             .sort({ createdAt: -1 })
             .lean();
     }
@@ -46,7 +46,7 @@ class ProfileUpdateService {
         return ProfileUpdateRequest_model_1.default.find({
             status: { $in: [interfaces_1.ProfileUpdateRequestStatus.Approved, interfaces_1.ProfileUpdateRequestStatus.Rejected, interfaces_1.ProfileUpdateRequestStatus.Revoked] }
         })
-            .populate('userId', 'name email employeeCode profilePicture')
+            .populate('userId', 'name email employeeCode profilePicture username phoneNumber dateOfBirth gender fatherName currentAddress permanentAddress description')
             .populate('reviewedBy', 'name')
             .sort({ reviewedAt: -1 })
             .limit(50)

@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAdminTodayView = exports.updateLateReason = exports.getMyToday = exports.endBreak = exports.startBreak = exports.punchOut = exports.punchIn = void 0;
+exports.getAdminAllAttendanceHistory = exports.getAdminTodayView = exports.updateLateReason = exports.getMyToday = exports.endBreak = exports.startBreak = exports.punchOut = exports.punchIn = void 0;
 const attendance_service_1 = require("../services/attendance.service");
 const asyncHandler_1 = require("../utils/asyncHandler");
+const task_service_1 = require("../services/task.service");
 const attendanceService = new attendance_service_1.AttendanceService();
+const taskService = new task_service_1.TaskService();
 // ─────────────────────────────────────────────
 // POST /api/v1/attendance/punch-in  [Employee]
 // ─────────────────────────────────────────────
@@ -27,6 +29,13 @@ exports.punchIn = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
 exports.punchOut = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
     try {
         const record = await attendanceService.punchOut(req.user.id);
+        // Auto-stop all running tasks on punch out (last logout of the day)
+        try {
+            await taskService.stopAllRunningTasks(req.user.id);
+        }
+        catch (e) {
+            console.error('Task stop failed during punchOut', e);
+        }
         res.status(200).json({
             success: true,
             message: 'Punched out successfully.',
@@ -106,6 +115,24 @@ exports.updateLateReason = (0, asyncHandler_1.asyncHandler)(async (req, res) => 
 // ─────────────────────────────────────────────
 exports.getAdminTodayView = (0, asyncHandler_1.asyncHandler)(async (_req, res) => {
     const data = await attendanceService.getAdminTodayView();
+    res.status(200).json({
+        success: true,
+        count: data.length,
+        data,
+    });
+});
+// ─────────────────────────────────────────────
+// GET /api/v1/attendance/admin/all  [Admin]
+// All attendance history with optional filters
+// ─────────────────────────────────────────────
+exports.getAdminAllAttendanceHistory = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+    const { userId, startDate, endDate } = req.query;
+    const filters = {
+        userId: userId,
+        startDate: startDate,
+        endDate: endDate,
+    };
+    const data = await attendanceService.getAdminAllAttendanceHistory(filters);
     res.status(200).json({
         success: true,
         count: data.length,

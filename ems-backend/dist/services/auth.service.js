@@ -52,8 +52,8 @@ class AuthService {
      * Throws a plain Error with a message on failure — controller decides HTTP status.
      */
     async login(input) {
-        const email = input.email.toLowerCase();
-        const { password } = input;
+        const email = input.email.trim().toLowerCase();
+        const password = input.password;
         // .select('+password') because password field has select:false on the schema
         const user = await User_model_1.default.findOne({ email }).select('+password');
         if (!user) {
@@ -83,6 +83,21 @@ class AuthService {
         if (!user)
             throw new Error('User not found');
         return toPublic(user);
+    }
+    /**
+     * Updates the password of the currently authenticated user.
+     */
+    async updatePassword(userId, currentPassword, newPassword) {
+        const user = await User_model_1.default.findById(userId).select('+password');
+        if (!user)
+            throw new error_middleware_1.AppError('User not found', 404);
+        const isMatch = await user.comparePassword(currentPassword);
+        if (!isMatch) {
+            throw new error_middleware_1.AppError('enter the correct current password', 400);
+        }
+        user.password = newPassword;
+        user.markModified('password');
+        await user.save();
     }
 }
 exports.AuthService = AuthService;

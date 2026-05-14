@@ -1,11 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logout = exports.getMe = exports.login = void 0;
+exports.updatePassword = exports.logout = exports.getMe = exports.login = void 0;
 const services_1 = require("../services");
 const asyncHandler_1 = require("../utils/asyncHandler");
 const attendance_service_1 = require("../services/attendance.service");
+const task_service_1 = require("../services/task.service");
 const authService = new services_1.AuthService();
 const attendanceService = new attendance_service_1.AttendanceService();
+const taskService = new task_service_1.TaskService();
 // ─────────────────────────────────────────────
 // POST /api/v1/auth/login
 // ─────────────────────────────────────────────
@@ -59,7 +61,7 @@ exports.getMe = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
 // We also auto-pause their shift.
 // ─────────────────────────────────────────────
 exports.logout = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
-    // Auto-pause shift (start a break) upon logout for non-admins
+    // Auto-pause shift (start a break) and pause tasks upon logout for non-admins
     if (req.user && req.user.role !== 'Admin') {
         try {
             await attendanceService.startBreak(req.user.id);
@@ -67,10 +69,31 @@ exports.logout = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
         catch (err) {
             // Swallow (e.g. already paused or not punched in)
         }
+        try {
+            await taskService.pauseAllRunningTasks(req.user.id);
+        }
+        catch (err) {
+            // Swallow errors and force logout success
+        }
     }
     res.status(200).json({
         success: true,
         message: 'Logged out successfully',
+    });
+});
+// ─────────────────────────────────────────────
+// PATCH /api/v1/auth/password  [protected]
+// ─────────────────────────────────────────────
+exports.updatePassword = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+        res.status(400);
+        throw new Error('Please provide both current and new password');
+    }
+    await authService.updatePassword(req.user.id, currentPassword, newPassword);
+    res.status(200).json({
+        success: true,
+        message: 'Password updated successfully',
     });
 });
 //# sourceMappingURL=auth.controller.js.map

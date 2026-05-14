@@ -14,4 +14,9 @@ export declare const addHoliday: (req: Request, res: Response, next: import("exp
  * Remove a public holiday [Admin Only]
  */
 export declare const deleteHoliday: (req: Request, res: Response, next: import("express").NextFunction) => void;
+/**
+ * PATCH /api/v1/holidays/:id
+ * Update a public holiday [Admin Only]
+ */
+export declare const updateHoliday: (req: Request, res: Response, next: import("express").NextFunction) => void;
 //# sourceMappingURL=holiday.controller.d.ts.map

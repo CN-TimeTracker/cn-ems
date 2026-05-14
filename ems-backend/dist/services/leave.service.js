@@ -1,47 +1,32 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LeaveService = void 0;
 const Leave_model_1 = __importDefault(require("../models/Leave.model"));
+const Holiday_model_1 = __importDefault(require("../models/Holiday.model"));
 const interfaces_1 = require("../interfaces");
+const time_service_1 = require("./time.service");
 // ─────────────────────────────────────────────
 // HELPER
 // ─────────────────────────────────────────────
+/**
+ * Normalizes a date to YYYY-MM-DD string for comparison
+ */
+const toDateString = (date) => {
+    return date.toISOString().split('T')[0];
+};
+/**
+ * Parses a date safely. Handles ISO strings or standard date strings.
+ */
+const parseSafe = (val) => {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) {
+        throw new Error(`Invalid date provided: ${val}`);
+    }
+    return d;
+};
 const toMidnight = (date) => {
     const d = new Date(date);
     d.setUTCHours(0, 0, 0, 0);
@@ -54,27 +39,47 @@ class LeaveService {
     /**
      * Employee applies for leave.
      * Validates no overlapping pending/approved leave exists for the same period.
+     * Blocks public holidays and enforces 5-day advance notice for Casual leave.
      */
     async applyLeave(userId, input) {
-        const { LeaveType, LeaveDuration, LeaveStatus } = await Promise.resolve().then(() => __importStar(require('../interfaces')));
-        const start = toMidnight(new Date(input.startDate));
-        const end = toMidnight(new Date(input.endDate));
+        const start = toMidnight(parseSafe(input.startDate));
+        const end = toMidnight(parseSafe(input.endDate));
         if (end < start) {
             throw new Error('End date cannot be before start date');
         }
-        // Monthly Casual Leave restriction: Max 1 day per month
-        if (input.leaveType === LeaveType.Casual) {
+        // 1. Public Holiday Check
+        const overlappingHolidays = await Holiday_model_1.default.find({
+            date: { $gte: start, $lte: end }
+        });
+        if (overlappingHolidays.length > 0) {
+            const holidayNames = overlappingHolidays.map(h => h.name).join(', ');
+            throw new Error(`Your leave request includes public holiday(s): ${holidayNames}. Please adjust your dates.`);
+        }
+        // 2. Advance notice check for Casual Leave (5 Days)
+        // POLICY: Casual leave must be applied at least 5 days in advance.
+        if (String(input.leaveType).trim() === interfaces_1.LeaveType.Casual) {
+            const today = time_service_1.TimeService.now();
+            const minDate = new Date(today);
+            minDate.setDate(today.getDate() + 5);
+            const startStr = toDateString(start);
+            const minStr = toDateString(minDate);
+            if (startStr < minStr) {
+                throw new Error('Casual leave requires at least 5 days of advance notice');
+            }
+        }
+        // 3. Monthly Casual Leave restriction: Max 1 day per month
+        if (String(input.leaveType).trim() === interfaces_1.LeaveType.Casual) {
             const monthStart = new Date(start.getFullYear(), start.getMonth(), 1);
             const monthEnd = new Date(start.getFullYear(), start.getMonth() + 1, 0);
             const existingCasualLeaves = await Leave_model_1.default.find({
                 userId,
-                leaveType: LeaveType.Casual,
-                status: { $in: [LeaveStatus.Pending, LeaveStatus.Approved] },
+                leaveType: interfaces_1.LeaveType.Casual,
+                status: { $in: [interfaces_1.LeaveStatus.Pending, interfaces_1.LeaveStatus.Approved] },
                 startDate: { $gte: monthStart, $lte: monthEnd },
             });
             let totalDays = 0;
             existingCasualLeaves.forEach(l => {
-                if (l.duration === LeaveDuration.HalfDay) {
+                if (l.duration === interfaces_1.LeaveDuration.HalfDay) {
                     totalDays += 0.5;
                 }
                 else {
@@ -82,17 +87,17 @@ class LeaveService {
                     totalDays += diff;
                 }
             });
-            const currentRequestDays = input.duration === LeaveDuration.HalfDay
+            const currentRequestDays = input.duration === interfaces_1.LeaveDuration.HalfDay
                 ? 0.5
                 : (Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
             if (totalDays + currentRequestDays > 1) {
                 throw new Error('Total Casual Leave cannot exceed 1 day per month');
             }
         }
-        // Block overlapping approved/pending leave
+        // 4. Block overlapping approved/pending leave
         const overlap = await Leave_model_1.default.findOne({
             userId,
-            status: { $in: [LeaveStatus.Pending, LeaveStatus.Approved] },
+            status: { $in: [interfaces_1.LeaveStatus.Pending, interfaces_1.LeaveStatus.Approved] },
             $or: [
                 { startDate: { $lte: end }, endDate: { $gte: start } },
             ],

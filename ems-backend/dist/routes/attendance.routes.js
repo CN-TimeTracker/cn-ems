@@ -20,5 +20,7 @@ router.get('/today', attendance_controller_1.getMyToday);
 router.patch('/today/reason', attendance_controller_1.updateLateReason);
 // GET    /api/v1/attendance/admin/today — Admin: all employees' attendance today
 router.get('/admin/today', auth_middleware_1.adminOnly, attendance_controller_1.getAdminTodayView);
+// GET    /api/v1/attendance/admin/all — Admin: all attendance history
+router.get('/admin/all', auth_middleware_1.adminOnly, attendance_controller_1.getAdminAllAttendanceHistory);
 exports.default = router;
 //# sourceMappingURL=attendance.routes.js.map

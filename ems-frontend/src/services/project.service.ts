@@ -4,6 +4,7 @@ import {
   Project,
   CreateProjectInput,
   UpdateProjectInput,
+  ProjectRemainingHours,
 } from '../types';
 
 // ─────────────────────────────────────────────
@@ -81,16 +82,8 @@ const ProjectService = {
    * GET /projects/:id/remaining [Protected]
    * Remaining vs spent hours for a project.
    */
-  getProjectRemainingHours: async (id: string): Promise<{
-    allocated: number;
-    spent: number;
-    remaining: number;
-  }> => {
-    const { data } = await api.get<ApiResponse<{
-      allocated: number;
-      spent: number;
-      remaining: number;
-    }>>(`/projects/${id}/remaining`);
+  getProjectRemainingHours: async (id: string): Promise<ProjectRemainingHours> => {
+    const { data } = await api.get<ApiResponse<ProjectRemainingHours>>(`/projects/${id}/remaining`);
     return data.data;
   },
 

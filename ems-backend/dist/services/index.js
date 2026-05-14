@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PayslipService = exports.AttendanceService = exports.DashboardService = exports.LeaveService = exports.WorkLogService = exports.TaskService = exports.ProjectService = exports.UserService = exports.AuthService = void 0;
+exports.TimeService = exports.PayslipService = exports.AttendanceService = exports.DashboardService = exports.LeaveService = exports.WorkLogService = exports.TaskService = exports.ProjectService = exports.UserService = exports.AuthService = void 0;
 var auth_service_1 = require("./auth.service");
 Object.defineProperty(exports, "AuthService", { enumerable: true, get: function () { return auth_service_1.AuthService; } });
 var user_service_1 = require("./user.service");
@@ -19,4 +19,6 @@ var attendance_service_1 = require("./attendance.service");
 Object.defineProperty(exports, "AttendanceService", { enumerable: true, get: function () { return attendance_service_1.AttendanceService; } });
 var payslip_service_1 = require("./payslip.service");
 Object.defineProperty(exports, "PayslipService", { enumerable: true, get: function () { return payslip_service_1.PayslipService; } });
+var time_service_1 = require("./time.service");
+Object.defineProperty(exports, "TimeService", { enumerable: true, get: function () { return time_service_1.TimeService; } });
 //# sourceMappingURL=index.js.map

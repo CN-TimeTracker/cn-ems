@@ -80,12 +80,12 @@ UserSchema.index({ isActive: 1 });
 // MIDDLEWARE
 // ─────────────────────────────────────────────
 // Hash password before every save — only if it was modified
-UserSchema.pre('save', async function (next) {
+UserSchema.pre('save', async function () {
     if (!this.isModified('password'))
-        return next();
+        return;
     const salt = await bcryptjs_1.default.genSalt(12);
-    this.password = await bcryptjs_1.default.hash(this.password, salt);
-    next();
+    const hashedPassword = await bcryptjs_1.default.hash(this.password, salt);
+    this.password = hashedPassword;
 });
 // ─────────────────────────────────────────────
 // INSTANCE METHODS

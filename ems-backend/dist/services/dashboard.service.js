@@ -13,6 +13,8 @@ const Attendance_model_1 = __importDefault(require("../models/Attendance.model")
 const Project_model_1 = __importDefault(require("../models/Project.model"));
 const interfaces_1 = require("../interfaces");
 const dateUtils_1 = require("../utils/dateUtils");
+const Holiday_model_1 = __importDefault(require("../models/Holiday.model"));
+const SalaryRecord_model_1 = __importDefault(require("../models/SalaryRecord.model"));
 // ─────────────────────────────────────────────
 // HELPER
 // ─────────────────────────────────────────────
@@ -58,7 +60,11 @@ class DashboardService {
         const allUserIds = allUsers.map((u) => u._id);
         // ── 1. Who punched in today ──────────────────────────────────────────
         const todayRecords = await Attendance_model_1.default.find({ date: today }).lean();
-        const loggedSet = new Set(todayRecords.map(r => r.userId.toString()));
+        // Filter to only count Staff (non-admins) who punched in
+        const staffIds = new Set(allUsers.filter(u => u.role !== interfaces_1.UserRole.Admin).map(u => u._id.toString()));
+        const loggedSet = new Set(todayRecords
+            .map(r => r.userId.toString())
+            .filter(id => staffIds.has(id)));
         // ── 2. Who has approved leave today ───────────────────────────────────
         const onLeaveToday = await Leave_model_1.default.distinct('userId', {
             status: interfaces_1.LeaveStatus.Approved,
@@ -76,26 +82,28 @@ class DashboardService {
             return !loggedSet.has(id) && !leaveSet.has(id);
         })
             .map(toPublic);
-        // ── 4. Users who logged but less than 4 hours ─────────────────────────
-        const hoursByUser = await WorkLog_model_1.default.aggregate([
-            { $match: { date: { $gte: today, $lt: tomorrow } } },
-            { $group: { _id: '$userId', totalHours: { $sum: '$hours' } } },
-        ]);
+        // ── 4. & 5. Users who logged but less than 4 hours & Total Hours ───────
+        // Standardizing to Task Hours (WorkLogs)
         const usersUnder4Hours = [];
-        for (const entry of hoursByUser) {
-            if (entry.totalHours < 4) {
-                const u = allUsers.find((user) => user._id.toString() === entry._id.toString());
+        // Get total task hours for everyone today
+        const totalTaskHoursAgg = await WorkLog_model_1.default.aggregate([
+            { $match: { date: { $gte: today, $lt: tomorrow } } },
+            { $group: { _id: null, total: { $sum: '$hours' } } }
+        ]);
+        const totalHoursToday = totalTaskHoursAgg[0]?.total || 0;
+        // Users with less than 4 hours logged on tasks
+        const userHoursToday = await WorkLog_model_1.default.aggregate([
+            { $match: { date: { $gte: today, $lt: tomorrow } } },
+            { $group: { _id: '$userId', total: { $sum: '$hours' } } }
+        ]);
+        for (const entry of userHoursToday) {
+            if (entry.total < 4) {
+                const u = allUsers.find(user => user._id.toString() === entry._id.toString() && user.role !== interfaces_1.UserRole.Admin);
                 if (u) {
-                    usersUnder4Hours.push({ user: toPublic(u), totalHours: entry.totalHours });
+                    usersUnder4Hours.push({ user: toPublic(u), totalHours: Number(entry.total.toFixed(2)) });
                 }
             }
         }
-        // ── 5. Total hours logged today (all users combined) ──────────────────
-        const totalHoursTodayAgg = await WorkLog_model_1.default.aggregate([
-            { $match: { date: { $gte: today, $lt: tomorrow } } },
-            { $group: { _id: null, total: { $sum: '$hours' } } },
-        ]);
-        const totalHoursToday = totalHoursTodayAgg[0]?.total ?? 0;
         // ── 7. Users with NO assigned tasks ────────────────────────────────────
         const usersWithTaskIds = await Task_model_1.default.distinct('assignedTo', {
             status: { $ne: interfaces_1.TaskStatus.ProjectCompleted },
@@ -143,19 +151,15 @@ class DashboardService {
         const today = (0, dateUtils_1.getISTMidnight)();
         const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
         const userObjectId = mongoose_1.default.Types.ObjectId.createFromHexString(userId);
-        const [todaysTasks, todaysLogsAgg, pendingTasks, recentLogs, todayAttendance, totalProjects, totalLeaves, projectWorkLogs] = await Promise.all([
+        const [todaysTasks, pendingTasks, recentLogs, todayAttendance, totalProjects, totalLeaves, projectWorkLogs, upcomingHolidays, salaryConfig] = await Promise.all([
             Task_model_1.default.find({
                 assignedTo: userObjectId,
                 status: { $ne: interfaces_1.TaskStatus.ProjectCompleted },
             }).populate('projectId', 'name clientName').sort({ deadline: 1 }).limit(10),
-            WorkLog_model_1.default.aggregate([
-                { $match: { userId: userObjectId, date: { $gte: today, $lt: tomorrow } } },
-                { $group: { _id: null, total: { $sum: '$hours' } } },
-            ]),
             Task_model_1.default.find({ assignedTo: userObjectId, status: { $ne: interfaces_1.TaskStatus.ProjectCompleted } })
                 .populate('projectId', 'name').sort({ deadline: 1 }),
             WorkLog_model_1.default.find({ userId: userObjectId })
-                .populate('projectId', 'name').populate('taskId', 'title')
+                .populate('projectId', 'name').populate('taskId', 'workType description')
                 .sort({ date: -1 }).limit(5),
             Attendance_model_1.default.findOne({ userId: userObjectId, date: today }).lean(),
             Project_model_1.default.countDocuments({ assignedTo: userObjectId, status: interfaces_1.ProjectStatus.Active }),
@@ -166,7 +170,13 @@ class DashboardService {
                 { $group: { _id: '$projectId', workedHours: { $sum: '$hours' } } },
                 { $lookup: { from: 'projects', localField: '_id', foreignField: '_id', as: 'p' } },
                 { $unwind: '$p' }
-            ])
+            ]),
+            Holiday_model_1.default.find({ date: { $gte: today } }).sort({ date: 1 }).limit(3).lean(),
+            SalaryRecord_model_1.default.findOne({
+                userId: userObjectId,
+                month: today.getUTCMonth() + 1,
+                year: today.getUTCFullYear()
+            }).lean()
         ]);
         const projectBreakdown = projectWorkLogs.map((pw) => ({
             projectId: pw._id.toString(),
@@ -177,15 +187,26 @@ class DashboardService {
             workedHours: pw.workedHours,
             deadline: pw.p.deadline
         }));
+        const todaysLoggedHoursAgg = await WorkLog_model_1.default.aggregate([
+            { $match: { userId: userObjectId, date: { $gte: today, $lt: tomorrow } } },
+            { $group: { _id: null, total: { $sum: '$hours' } } }
+        ]);
+        const todaysLoggedHours = todaysLoggedHoursAgg[0]?.total || 0;
+        const currentMonthName = today.toLocaleString('default', { month: 'long' });
         return {
             todaysTasks: todaysTasks,
-            todaysLoggedHours: todaysLogsAgg[0]?.total ?? 0,
+            todaysLoggedHours: Number(todaysLoggedHours.toFixed(2)),
             pendingTasks: pendingTasks,
             recentLogs: recentLogs,
             todayAttendance: todayAttendance,
             totalProjects,
             totalLeaves,
-            projectBreakdown
+            projectBreakdown,
+            upcomingHolidays: upcomingHolidays.map(h => ({ name: h.name, date: h.date })),
+            salaryStatus: {
+                month: currentMonthName,
+                status: salaryConfig?.isApproved ? 'Verified' : 'Processing'
+            }
         };
     }
     /**

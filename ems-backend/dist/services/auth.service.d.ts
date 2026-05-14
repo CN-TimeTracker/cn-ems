@@ -9,5 +9,9 @@ export declare class AuthService {
      * Returns the public profile of the currently authenticated user.
      */
     getMe(userId: string): Promise<IUserPublic>;
+    /**
+     * Updates the password of the currently authenticated user.
+     */
+    updatePassword(userId: string, currentPassword: string, newPassword: string): Promise<void>;
 }
 //# sourceMappingURL=auth.service.d.ts.map

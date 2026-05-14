@@ -12,5 +12,7 @@ router.post('/login', (0, validate_middleware_1.validate)(schemas_1.loginSchema)
 router.get('/me', auth_middleware_1.protect, auth_controller_1.getMe);
 // POST   /api/v1/auth/logout
 router.post('/logout', auth_middleware_1.protect, auth_controller_1.logout);
+// PATCH  /api/v1/auth/password
+router.patch('/password', auth_middleware_1.protect, auth_controller_1.updatePassword);
 exports.default = router;
 //# sourceMappingURL=auth.routes.js.map

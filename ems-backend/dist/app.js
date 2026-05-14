@@ -25,12 +25,15 @@ const profile_routes_1 = __importDefault(require("./routes/profile.routes"));
 const payslip_routes_1 = __importDefault(require("./routes/payslip.routes"));
 const event_routes_1 = __importDefault(require("./routes/event.routes"));
 const holiday_routes_1 = __importDefault(require("./routes/holiday.routes"));
+const quote_routes_1 = __importDefault(require("./routes/quote.routes"));
 const cron_service_1 = require("./services/cron.service");
+const time_service_1 = require("./services/time.service");
 // ─────────────────────────────────────────────
 // BOOTSTRAP
 // ─────────────────────────────────────────────
 dotenv_1.default.config();
 (0, db_1.default)();
+time_service_1.TimeService.init();
 cron_service_1.CronService.init();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
@@ -39,7 +42,7 @@ const PORT = process.env.PORT || 5000;
 // ─────────────────────────────────────────────
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: [process.env.FRONTEND_URL || 'http://localhost:3000', 'http://localhost:3001'],
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -52,14 +55,14 @@ const limiter = (0, express_rate_limit_1.default)({
     standardHeaders: true,
     legacyHeaders: false,
 });
-app.use('/api', limiter);
+// app.use('/api', limiter);
 // Stricter limiter on auth endpoints
 const authLimiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000,
     max: 10,
     message: { success: false, message: 'Too many login attempts. Please try again later.' },
 });
-app.use('/api/v1/auth/login', authLimiter);
+// app.use('/api/v1/auth/login', authLimiter);
 // ─────────────────────────────────────────────
 // GENERAL MIDDLEWARE
 // ─────────────────────────────────────────────
@@ -96,6 +99,7 @@ app.use('/api/v1/profile', profile_routes_1.default);
 app.use('/api/v1/payslips', payslip_routes_1.default);
 app.use('/api/v1/events', event_routes_1.default);
 app.use('/api/v1/holidays', holiday_routes_1.default);
+app.use('/api/v1/quotes', quote_routes_1.default);
 // ─────────────────────────────────────────────
 // ERROR HANDLING (must be last)
 // ─────────────────────────────────────────────

@@ -3,6 +3,7 @@ export declare class LeaveService {
     /**
      * Employee applies for leave.
      * Validates no overlapping pending/approved leave exists for the same period.
+     * Blocks public holidays and enforces 5-day advance notice for Casual leave.
      */
     applyLeave(userId: string, input: ICreateLeaveInput): Promise<ILeave>;
     /**

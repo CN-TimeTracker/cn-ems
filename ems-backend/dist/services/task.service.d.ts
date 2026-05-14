@@ -2,7 +2,7 @@ import { ITask, ICreateTaskInput, IUpdateTaskInput, ITaskFilters } from '../inte
 export declare class TaskService {
     /**
      * Creates and assigns a task.
-     * Validates that the referenced project and user both exist before creating.
+     * Validates project existence, prevents duplicates for the same day, and handles auto-timer.
      */
     createTask(input: ICreateTaskInput, createdBy: string): Promise<ITask>;
     /**
@@ -43,6 +43,16 @@ export declare class TaskService {
      * Pauses the timer and accumulates elapsed minutes.
      */
     pauseTimer(taskId: string, userId: string): Promise<ITask>;
+    /**
+     * Pauses all running tasks for a specific user.
+     * Useful for auto-pausing tasks upon logout or midnight cron.
+     */
+    pauseAllRunningTasks(userId: string): Promise<void>;
+    /**
+     * Stops all running tasks for a specific user.
+     * Useful for auto-stopping tasks upon punch-out (end of day).
+     */
+    stopAllRunningTasks(userId: string): Promise<void>;
     /**
      * Stops the timer, accumulates time, and marks task as Done.
      */
